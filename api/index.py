@@ -73,8 +73,7 @@ def submit_text():
 
     # store if url domain in ClueWeb
     url_domain = urlparse(url).netloc
-    if url_domain in domains:
-
+    # if url_domain in domains:
         # # connect  to database
         # conn = sqlite3.connect("data.db")
         # c = conn.cursor()
