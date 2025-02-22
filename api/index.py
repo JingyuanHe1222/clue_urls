@@ -33,8 +33,8 @@ def load_domains(file_path):
 
 
 # init_db()
-domains = load_domains('../assets/domains_8.pickle')
-# {'www.cmu.edu', 'www.airbnb.com', 'gradescope.com', 'bing.com', 'google.com', 'about.meta.com', 'yahoot.com', 'wandb.ai'}
+# domains = load_domains('../assets/domains_8.pickle')
+domains = ['www.cmu.edu', 'www.airbnb.com', 'gradescope.com', 'bing.com', 'google.com', 'about.meta.com', 'yahoot.com', 'wandb.ai']
 
 # interface homepage
 @app.route('/')
