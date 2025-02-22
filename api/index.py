@@ -32,7 +32,7 @@ def load_domains(file_path):
     return domains 
 
 
-init_db()
+# init_db()
 domains = load_domains('domains/domains_8.pickle')
 # {'www.cmu.edu', 'www.airbnb.com', 'gradescope.com', 'bing.com', 'google.com', 'about.meta.com', 'yahoot.com', 'wandb.ai'}
 
@@ -75,23 +75,23 @@ def submit_text():
     url_domain = urlparse(url).netloc
     if url_domain in domains:
 
-        # connect  to database
-        conn = sqlite3.connect("data.db")
-        c = conn.cursor()
+        # # connect  to database
+        # conn = sqlite3.connect("data.db")
+        # c = conn.cursor()
 
-        # check if there's a duplicated submission 
-        c.execute("SELECT COUNT(*) FROM submissions WHERE user_id = ? AND url = ? AND timestamp = ?", 
-                    (user_id, url, unix_time))
-        duplicate_count = c.fetchone()[0]
-        # if duplicate -> count as invalid
-        if duplicate_count > 0:
-            conn.close()
-            return jsonify({"error": "Invalid submission: you have already submitted this URL at the exact same timestamp."}), 400
+        # # check if there's a duplicated submission 
+        # c.execute("SELECT COUNT(*) FROM submissions WHERE user_id = ? AND url = ? AND timestamp = ?", 
+        #             (user_id, url, unix_time))
+        # duplicate_count = c.fetchone()[0]
+        # # if duplicate -> count as invalid
+        # if duplicate_count > 0:
+        #     conn.close()
+        #     return jsonify({"error": "Invalid submission: you have already submitted this URL at the exact same timestamp."}), 400
 
-        # save 
-        c.execute("INSERT INTO submissions (user_id, url, timestamp) VALUES (?, ?, ?)", (user_id, url, unix_time))
-        conn.commit()
-        conn.close()
+        # # save 
+        # c.execute("INSERT INTO submissions (user_id, url, timestamp) VALUES (?, ?, ?)", (user_id, url, unix_time))
+        # conn.commit()
+        # conn.close()
 
     # update number of valid submission (no matter in domain or not)
     submission_count = int(request.cookies.get("submission_count", 0)) + 1
