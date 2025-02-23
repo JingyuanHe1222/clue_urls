@@ -1,45 +1,81 @@
 
 from datetime import datetime
-import pickle
-
-from urllib.parse import urlparse
-
-from flask import Flask, request, jsonify, render_template, make_response
-import sqlite3
+from dotenv import load_dotenv
+import os 
 import uuid
 
+from urllib.parse import urlparse
+import validators
 
+from flask import Flask, session, request, jsonify, render_template, make_response
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect
+
+
+# ### env var ###
+load_dotenv(dotenv_path=".env.local")
+VALID_API_KEYS = [os.getenv("API_KEY")]
+TABLE_NAME = os.getenv("TABLE_NAME")
+POSTGRES_URL = os.getenv("POSTGRES_URL")
+if POSTGRES_URL and POSTGRES_URL.startswith("postgres://"):
+    POSTGRES_URL = POSTGRES_URL.replace("postgres://", "postgresql://", 1)
+
+print(f"POSTGRES_URL: {POSTGRES_URL}")
+
+domains = ['www.cmu.edu', 'www.airbnb.com', 'www.gradescope.com', 'www.bing.com', 'www.google.com', 'about.meta.com', 'yahoot.com', 'wandb.ai']
+
+
+# ### app ###
 app = Flask(__name__)
 
-# init the database
-def init_db():
-    conn = sqlite3.connect("data.db")
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS submissions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            user_id TEXT, 
-            url TEXT NOT NULL,
-            timestamp TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
 
-def load_domains(file_path): 
-    with open(file_path, "rb") as f:
-        domains = pickle.load(f)
-    return domains 
+# ### datastore ### 
+app.secret_key = VALID_API_KEYS
+app.config["SQLALCHEMY_DATABASE_URI"] = POSTGRES_URL
+# init SQLAlchemy 
+db = SQLAlchemy(app)
+
+# data model 
+class URLs(db.Model):
+    __tablename__ = 'recsys_urls_clueweb_filtered'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.String(80), nullable=False)
+    url = db.Column(db.String(2083), nullable=False)
+    timestamp = db.Column(db.String(80), nullable=False) 
+
+# create model 
+with app.app_context():
+    inspector = inspect(db.engine)
+    if not inspector.has_table("urls"):
+        db.create_all()
 
 
-# init_db()
-# domains = load_domains('../assets/domains_8.pickle')
-domains = ['www.cmu.edu', 'www.airbnb.com', 'gradescope.com', 'bing.com', 'google.com', 'about.meta.com', 'yahoot.com', 'wandb.ai']
+# ### UI Interface ### 
 
-# interface homepage
+# landing page 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+# authenticate to reach submission forum 
+@app.route('/authenticate', methods=['POST'])
+def authenticate():
+    data = request.json
+    api_key = data.get("api_key")
+
+    if api_key in VALID_API_KEYS:
+        session['authenticated'] = True  
+        return jsonify({"message": "Authentication successful!"}), 200
+    else:
+        return jsonify({"error": "Invalid API key!"}), 401
+
+# url submission page 
+@app.route('/submission')
+def submission_page():
+    if not session.get('authenticated'):
+        return redirect(url_for('index'))  # Redirect to API key page if not authenticated
+    return render_template('submission.html')
+
 
 # check user submissions 
 @app.route('/submission_count', methods=['GET'])
@@ -52,6 +88,10 @@ def get_submission_count():
 # Handle text submission
 @app.route('/submit', methods=['POST'])
 def submit_text():
+
+    if not session.get('authenticated'):
+        return jsonify({"error": "Unauthorized access!"}), 403
+
     data = request.json
     url = data.get("url", "").strip()
     timestamp_str = data.get("timestamp", "").strip()
@@ -63,8 +103,10 @@ def submit_text():
         timestamp = datetime.strptime(timestamp_str, "%H:%M %m/%d/%Y")
     except ValueError:
         return jsonify({"error": "Invalid timestamp format. Use hh:mm MM/DD/YYYY. (24 hours format)"}), 400
+    if not validators.url(url): 
+        return jsonify({"error": "Please input a valid URL."}), 400
 
-    unix_time = int(timestamp.timestamp()) 
+    unix_time = str(int(timestamp.timestamp()))
 
     # uid - persistent 
     user_id = request.cookies.get("user_id")
@@ -73,24 +115,17 @@ def submit_text():
 
     # store if url domain in ClueWeb
     url_domain = urlparse(url).netloc
-    # if url_domain in domains:
-        # # connect  to database
-        # conn = sqlite3.connect("data.db")
-        # c = conn.cursor()
+    if url_domain in domains:
 
-        # # check if there's a duplicated submission 
-        # c.execute("SELECT COUNT(*) FROM submissions WHERE user_id = ? AND url = ? AND timestamp = ?", 
-        #             (user_id, url, unix_time))
-        # duplicate_count = c.fetchone()[0]
-        # # if duplicate -> count as invalid
-        # if duplicate_count > 0:
-        #     conn.close()
-        #     return jsonify({"error": "Invalid submission: you have already submitted this URL at the exact same timestamp."}), 400
+        # if duplicate -> count as invalid
+        existing_urls = URLs.query.filter_by(user_id=user_id, url=url, timestamp=unix_time).first()
+        if existing_urls:
+            return jsonify({"error": "Invalid submission: you have already submitted this URL at the exact same timestamp."}), 400
 
-        # # save 
-        # c.execute("INSERT INTO submissions (user_id, url, timestamp) VALUES (?, ?, ?)", (user_id, url, unix_time))
-        # conn.commit()
-        # conn.close()
+        # save 
+        new_record = URLs(user_id=user_id, url=url, timestamp=unix_time)
+        db.session.add(new_record)
+        db.session.commit()
 
     # update number of valid submission (no matter in domain or not)
     submission_count = int(request.cookies.get("submission_count", 0)) + 1
@@ -100,6 +135,7 @@ def submit_text():
     response.set_cookie("submission_count", str(submission_count), max_age=60*60*24*365, httponly=True, samesite="Lax")
 
     return response
+
 
 if __name__ == '__main__':
     app.run(debug=True)

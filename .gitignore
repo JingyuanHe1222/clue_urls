@@ -4,6 +4,7 @@
 __pycache__
 
 # Environments 
+api/.env.local
 .env 
 .venv 
 env/ 

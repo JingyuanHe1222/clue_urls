@@ -1,54 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Browsing History Submission</title>
+    <title>API Key Authentication</title>
     <script>
-        async function submitText() {
-            let urlInput = document.getElementById("urlInput").value.trim();
-            let timeInput = document.getElementById("timeInput").value.trim();
+        async function submitApiKey() {
+            let apiKey = document.getElementById("apiKey").value;
 
-            if (!urlInput || !timeInput) {
-                document.getElementById("response").innerText = "Please enter both a URL and a timestamp.";
-                return;
-            }
-
-            let response = await fetch("/submit", {
+            let response = await fetch("/authenticate", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: urlInput, timestamp: timeInput })
+                body: JSON.stringify({ api_key: apiKey })
             });
 
             let result = await response.json();
-            document.getElementById("response").innerText = result.message || result.error;
 
-            // Update submission count if submission is valid
             if (response.ok) {
-                document.getElementById("urlInput").value = "";
-                document.getElementById("timeInput").value = "";
-                document.getElementById("submissionCount").innerText = `Valid Submissions: ${result.submission_count}`;
+                window.location.href = "/submission"; 
+            } else {
+                document.getElementById("error").innerText = result.error;
             }
         }
-
-        // Fetch and display submission count on page load
-        async function fetchSubmissionCount() {
-            let response = await fetch("/submission_count");
-            let result = await response.json();
-            document.getElementById("submissionCount").innerText = `Valid Submissions: ${result.submission_count}`;
-        }
-
-        window.onload = fetchSubmissionCount;
     </script>
 </head>
 <body>
-    <h1>Submit a Browsing History Entry</h1>
-    <label for="urlInput">URL:</label>
-    <input type="text" id="urlInput" size="100"><br><br>
-
-    <label for="timeInput">Timestamp in 24 hour format (hh:mm MM/DD/YYYY):</label>
-    <input type="text" id="timeInput" placeholder="19:30 02/19/2025"><br><br>
-
-    <button onclick="submitText()">Submit</button>
-    <p id="response"></p>
-    <p id="submissionCount">Valid Submissions: 0</p>
+    <h1>Enter API Key</h1>
+    <input type="text" id="apiKey" placeholder="Enter your API key">
+    <button onclick="submitApiKey()">Submit</button>
+    <p id="error" style="color:red;"></p>
 </body>
 </html>
