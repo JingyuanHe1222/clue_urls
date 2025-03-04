@@ -106,12 +106,24 @@ def submit_text():
     if not validators.url(url): 
         return jsonify({"error": "Please input a valid URL."}), 400
 
-    # check if this url is accessiable
-    try:
-        response = requests.get(url)
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL. {e}"}), 400
+    # check if this url is publically accessiable
+    def is_url_accessible(url):
+        try:
+            url_session = requests.Session()
+            url_session.cookies.clear()
+            response = url_session.get(url, timeout=5, allow_redirects=True)
+            # Check for authentication-required status codes
+            if response.status_code in [401, 403]:
+                return False
+            login_keywords = ["404", "sign in", "log in", "authentication required", "please sign in", "create an account"]
+            if any(keyword in response.text.lower() for keyword in login_keywords):
+                return False
+            return response.status_code == 200
+        except requests.RequestException or requests.ConnectionError:
+            return False
+        
+    if not is_url_accessible(url): 
+        return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL."}), 400
 
 
     unix_time = str(int(timestamp.timestamp()))
