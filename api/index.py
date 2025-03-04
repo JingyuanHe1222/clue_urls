@@ -3,8 +3,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 import os 
 import uuid
-
-from urllib.parse import urlparse
+import requests
 import validators
 
 from flask import Flask, session, request, jsonify, render_template, make_response
@@ -14,6 +13,7 @@ from sqlalchemy import inspect
 
 # ### env var ###
 load_dotenv(dotenv_path=".env.local")
+
 VALID_API_KEYS = [os.getenv("API_KEY")]
 TABLE_NAME = os.getenv("TABLE_NAME")
 POSTGRES_URL = os.getenv("POSTGRES_URL")
@@ -106,6 +106,14 @@ def submit_text():
     if not validators.url(url): 
         return jsonify({"error": "Please input a valid URL."}), 400
 
+    # check if this url is accessiable
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL. {e}"}), 400
+
+
     unix_time = str(int(timestamp.timestamp()))
 
     # uid - persistent 
@@ -113,19 +121,15 @@ def submit_text():
     if not user_id:
         user_id = str(uuid.uuid4())
 
-    # store if url domain in ClueWeb
-    url_domain = urlparse(url).netloc
-    if url_domain in domains:
+    # if duplicate -> count as invalid
+    existing_urls = URLs.query.filter_by(user_id=user_id, url=url, timestamp=unix_time).first()
+    if existing_urls:
+        return jsonify({"error": "Invalid submission: you have already submitted this URL at the exact same timestamp."}), 400
 
-        # if duplicate -> count as invalid
-        existing_urls = URLs.query.filter_by(user_id=user_id, url=url, timestamp=unix_time).first()
-        if existing_urls:
-            return jsonify({"error": "Invalid submission: you have already submitted this URL at the exact same timestamp."}), 400
-
-        # save 
-        new_record = URLs(user_id=user_id, url=url, timestamp=unix_time)
-        db.session.add(new_record)
-        db.session.commit()
+    # save 
+    new_record = URLs(user_id=user_id, url=url, timestamp=unix_time)
+    db.session.add(new_record)
+    db.session.commit()
 
     # update number of valid submission (no matter in domain or not)
     submission_count = int(request.cookies.get("submission_count", 0)) + 1
