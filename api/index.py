@@ -111,12 +111,10 @@ def submit_text():
         try:
             url_session = requests.Session()
             url_session.cookies.clear()
-            response = url_session.get(url, timeout=5, allow_redirects=True)
+            response = url_session.get(url, timeout=10, allow_redirects=False)
             # Check for authentication-required status codes
+            url_session.close()
             if response.status_code in [401, 403]:
-                return False
-            login_keywords = ["404", "sign in", "log in", "authentication required", "please sign in", "create an account"]
-            if any(keyword in response.text.lower() for keyword in login_keywords):
                 return False
             return response.status_code == 200
         except requests.RequestException or requests.ConnectionError:
