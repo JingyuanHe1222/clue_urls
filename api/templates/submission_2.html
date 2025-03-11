@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browsing History Submission</title>
+    <style>
+        /* Base Styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Centered Container */
+        .container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            width: calc(100% - 40px);
+            max-width: 600px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* Header Section */
+        .header {
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin: 0;
+            color: #444;
+        }
+
+        /* Input Fields */
+        label {
+            font-size: 16px;
+            margin-bottom: 5px;
+            display: block;
+            text-align: left;
+            color: #555;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #6c63ff;
+            box-shadow: 0 0 5px rgba(108, 99, 255, 0.5);
+        }
+
+        /* Submit Button */
+        button {
+            background-color: #6c63ff;
+            color: white;
+            font-size: 16px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #574fcf;
+        }
+
+        button:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+
+        /* Response Message and Submission Count */
+        #response {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        #submissionCount {
+            color: #333;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        /* Footer for Additional Information */
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+    <script>
+        async function submitText() {
+            let urlInput = document.getElementById("urlInput").value.trim();
+            let timeInput = document.getElementById("timeInput").value.trim();
+
+            if (!urlInput || !timeInput) {
+                document.getElementById("response").innerText = "Please enter both a URL and a timestamp.";
+                return;
+            }
+
+            let response = await fetch("/submit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: urlInput, timestamp: timeInput })
+            });
+
+            let result = await response.json();
+            document.getElementById("response").innerText = result.message || result.error;
+
+            // Update submission count if submission is valid
+            if (response.ok) {
+                document.getElementById("urlInput").value = "";
+                document.getElementById("timeInput").value = "";
+                document.getElementById("submissionCount").innerText = `Valid Submissions: ${result.submission_count}`;
+            }
+        }
+
+        // Fetch and display submission count on page load
+        async function fetchSubmissionCount() {
+            let response = await fetch("/submission_count");
+            let result = await response.json();
+            document.getElementById("submissionCount").innerText = `Valid Submissions: ${result.submission_count}`;
+        }
+
+        window.onload = fetchSubmissionCount;
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Submit a Browsing History Entry</h1>
+        </div>
+        <form>
+            <label for="urlInput">URL:</label>
+            <input type="text" id="urlInput" placeholder="Enter the URL here...">
+            
+            <label for="timeInput">Timestamp in 24-hour format (hh:mm MM/DD/YYYY):</label>
+            <input type="text" id="timeInput" placeholder="e.g., 19:30 02/19/2025">
+        </form>
+        <button onclick="submitText()">Submit</button>
+        <p id="response"></p>
+        <p id="submissionCount">Valid Submissions: 0</p>
+        <div class="footer">
+            <p>&copy; CX_GROUP @ CMU LTI</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -55,7 +55,7 @@ with app.app_context():
 # landing page 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('landing_2.html')
 
 # authenticate to reach submission forum 
 @app.route('/authenticate', methods=['POST'])
@@ -74,7 +74,7 @@ def authenticate():
 def submission_page():
     if not session.get('authenticated'):
         return redirect(url_for('index'))  # Redirect to API key page if not authenticated
-    return render_template('submission.html')
+    return render_template('submission_2.html')
 
 
 # check user submissions 
