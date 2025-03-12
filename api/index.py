@@ -22,11 +22,11 @@ if POSTGRES_URL and POSTGRES_URL.startswith("postgres://"):
 
 print(f"POSTGRES_URL: {POSTGRES_URL}")
 
-domains = ['www.cmu.edu', 'www.airbnb.com', 'www.gradescope.com', 'www.bing.com', 'www.google.com', 'about.meta.com', 'yahoot.com', 'wandb.ai']
-
 
 # ### app ###
 app = Flask(__name__)
+
+print("app created...")
 
 
 # ### datastore ### 
@@ -51,6 +51,7 @@ with app.app_context():
     if not inspector.has_table("urls"):
         db.create_all()
 
+print("table created...")
 
 # ### UI Interface ### 
 
