@@ -20,13 +20,8 @@ POSTGRES_URL = os.getenv("POSTGRES_URL")
 if POSTGRES_URL and POSTGRES_URL.startswith("postgres://"):
     POSTGRES_URL = POSTGRES_URL.replace("postgres://", "postgresql://", 1)
 
-print(f"POSTGRES_URL: {POSTGRES_URL}")
-
-
 # ### app ###
 app = Flask(__name__)
-
-print("app created...")
 
 
 # ### datastore ### 
@@ -37,7 +32,7 @@ db = SQLAlchemy(app)
 
 # data model 
 class URLs(db.Model):
-    __tablename__ = 'recsys_urls_clueweb_filtered'
+    __tablename__ = TABLE_NAME
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.String(80), nullable=False)
     worker_id = db.Column(db.String(80), nullable=False)  # Add this line
@@ -47,13 +42,10 @@ class URLs(db.Model):
 
 # create model 
 with app.app_context():
-    print("inspecting database...")
     inspector = inspect(db.engine)
     if not inspector.has_table("urls"):
-        print("creating table...")
         db.create_all()
 
-print("table created...")
 
 # ### UI Interface ### 
 
@@ -67,10 +59,19 @@ def index():
 def authenticate():
     data = request.json
     api_key = data.get("api_key")
+    worker_id = data.get("worker_id", "").strip()
+
+    if not worker_id:
+        return jsonify({"error": "Worker ID is required!"}), 400
+
+    response = make_response(jsonify({"message": "Worker ID saved!"}))
+    response.set_cookie("worker_id", worker_id, max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
 
     if api_key in VALID_API_KEYS:
         session['authenticated'] = True  
-        return jsonify({"message": "Authentication successful!"}), 200
+        response = make_response(jsonify({"message": "Authentication successful!"}))
+        response.set_cookie("worker_id", worker_id, max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
+        return response, 200
     else:
         return jsonify({"error": "Invalid API key!"}), 401
 
@@ -100,11 +101,10 @@ def submit_text():
     data = request.json
     url = data.get("url", "").strip()
     timestamp_str = data.get("timestamp", "").strip()
-    worker_id = data.get("worker_id", "").strip()
 
     # check if user input is valid as a submission record 
-    if not url or not timestamp_str or not worker_id:
-        return jsonify({"error": "URL, timestamp, and worker ID are required."}), 400
+    if not url or not timestamp_str:
+        return jsonify({"error": "Both URL and timestamp are required."}), 400
     try:
         timestamp = datetime.strptime(timestamp_str, "%H:%M %m/%d/%Y")
     except ValueError:
@@ -123,7 +123,6 @@ def submit_text():
             url_session.cookies.clear()
             response = url_session.get(url, headers=headers, timeout=10, allow_redirects=False)
 
-            breakpoint()
             # output code in log 
             print("response.status_code: ", response.status_code)
 
@@ -141,6 +140,7 @@ def submit_text():
 
     unix_time = str(int(timestamp.timestamp()))
 
+    worker_id = request.cookies.get("worker_id")
     # uid - persistent 
     user_id = request.cookies.get("user_id")
     if not user_id:
@@ -167,7 +167,6 @@ def submit_text():
     }))
     
     response.set_cookie("user_id", user_id, max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
-    response.set_cookie("worker_id", worker_id, max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
     response.set_cookie("submission_count", str(submission_count), max_age=60*60*24*365, httponly=True, samesite="Lax")
 
     return response
