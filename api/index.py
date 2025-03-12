@@ -47,8 +47,10 @@ class URLs(db.Model):
 
 # create model 
 with app.app_context():
+    print("inspecting database...")
     inspector = inspect(db.engine)
     if not inspector.has_table("urls"):
+        print("creating table...")
         db.create_all()
 
 print("table created...")
