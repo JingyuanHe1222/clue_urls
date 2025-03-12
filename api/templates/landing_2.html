@@ -86,18 +86,20 @@
     <script>
         async function submitApiKey() {
             let apiKey = document.getElementById("apiKey").value;
+            let workerId = document.getElementById("workerId").value;
 
             let response = await fetch("/authenticate", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ api_key: apiKey })
+                body: JSON.stringify({ api_key: apiKey, worker_id: workerId })
             });
 
             let result = await response.json();
 
             if (response.ok) {
-                sessionStorage.setItem("apiKey", apiKey); // Store key temporarily
-                window.location.href = "/submission"; 
+                sessionStorage.setItem("apiKey", apiKey);
+                sessionStorage.setItem("workerId", workerId);
+                window.location.href = "/submission";
             } else {
                 document.getElementById("error").innerText = result.error;
             }
@@ -110,7 +112,7 @@
             <img src="{{ url_for('static', filename='images/cmu-scotty.png') }}" alt="CMU Logo" width="150" height="150">
             <h1>Enter API Key</h1>
         </div>
-        <!-- <h1>Enter Your API Key</h1> -->
+        <input type="text" id="workerId" placeholder="Enter your Worker ID" style="margin-top: 10px;">
         <input type="text" id="apiKey" placeholder="Enter your API key">
         <button onclick="submitApiKey()">Submit</button>
         <p id="error"></p>
