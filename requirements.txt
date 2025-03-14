@@ -5,3 +5,5 @@ python-dotenv
 psycopg2-binary
 requests
 dotenv
+bs4
+webdriver-manager

@@ -3,12 +3,14 @@ from datetime import datetime
 from dotenv import load_dotenv
 import os 
 import uuid
-import requests
 import validators
 
 from flask import Flask, session, request, jsonify, render_template, make_response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
+
+
+from utils import *
 
 
 # ### env var ###
@@ -38,8 +40,7 @@ class URLs(db.Model):
     worker_id = db.Column(db.String(80), nullable=False)  # Add this line
     url = db.Column(db.String(2083), nullable=False)
     timestamp = db.Column(db.String(80), nullable=False) 
-                          
-
+       
 # create model 
 with app.app_context():
     inspector = inspect(db.engine)
@@ -111,31 +112,13 @@ def submit_text():
         return jsonify({"error": "Invalid timestamp format. Use hh:mm MM/DD/YYYY. (24 hours format)"}), 400
     if not validators.url(url): 
         return jsonify({"error": "Please input a valid URL."}), 400
-
-    def is_url_accessible(url):
-        try:
-            url_session = requests.Session()
-            # User-Agent header to mimic a browser
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
-            }
-            # request with headers and session
-            url_session.cookies.clear()
-            response = url_session.get(url, headers=headers, timeout=10, allow_redirects=False)
-
-            # output code in log 
-            print("response.status_code: ", response.status_code)
-
-            if response.status_code in [401, 403]:  
-                return False
-            return response.status_code == 200
         
-        except requests.RequestException as e:
-            print(f"Request failed: {e}")
-            return False
-        
+    # check if url accessible 
     if not is_url_accessible(url): 
         return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL."}), 400
+    # check if url not generated 
+    if is_generated_page(url): 
+        return jsonify({"error": f"Invalid submission: URL submitted is a generated page. Please do not submit URL like search engines results. "}), 400
 
 
     unix_time = str(int(timestamp.timestamp()))

@@ -1,0 +1,77 @@
+/* Base Styling */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f7f7f7;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Centered Container */
+.container {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    width: calc(100% - 40px); /* Full width minus 40px total margin (20px on each side) */
+    max-width: 1200px; /* Optional: Set a max width for larger screens */
+    margin: 20px auto; /* Center container with margin */
+    padding: 20px; /* Inner padding inside the container */
+    text-align: center;
+}
+/* Header */
+h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #444;
+}
+
+/* API Input Box */
+input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+input[type="text"]:focus {
+    outline: none;
+    border-color: #6c63ff;
+    box-shadow: 0 0 5px rgba(108, 99, 255, 0.5);
+}
+
+/* Submit Button */
+button {
+    background-color: #6c63ff;
+    color: white;
+    font-size: 16px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+}
+button:hover {
+    background-color: #574fcf;
+}
+button:disabled {
+    background-color: #ddd;
+    cursor: not-allowed;
+}
+
+#error {
+    color: red;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+.footer {
+    margin-top: 20px;
+    font-size: 12px;
+    color: #888;
+}

@@ -4,109 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Browsing History Submission</title>
-    <style>
-        /* Base Styling */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f7f7f7;
-            color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/submissions.css') }}" type="text/css">
 
-        /* Centered Container */
-        .container {
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            width: calc(100% - 40px);
-            max-width: 600px;
-            padding: 20px;
-            text-align: center;
-        }
-
-        /* Header Section */
-        .header {
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            font-size: 24px;
-            margin: 0;
-            color: #444;
-        }
-
-        /* Input Fields */
-        label {
-            font-size: 16px;
-            margin-bottom: 5px;
-            display: block;
-            text-align: left;
-            color: #555;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #6c63ff;
-            box-shadow: 0 0 5px rgba(108, 99, 255, 0.5);
-        }
-
-        /* Submit Button */
-        button {
-            background-color: #6c63ff;
-            color: white;
-            font-size: 16px;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-        }
-
-        button:hover {
-            background-color: #574fcf;
-        }
-
-        button:disabled {
-            background-color: #ddd;
-            cursor: not-allowed;
-        }
-
-        /* Response Message and Submission Count */
-        #response {
-            color: red;
-            font-size: 14px;
-            margin-top: 10px;
-        }
-
-        #submissionCount {
-            color: #333;
-            font-size: 14px;
-            margin-top: 10px;
-        }
-
-        /* Footer for Additional Information */
-        .footer {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #888;
-        }
-    </style>
     <script>
+
+        /* FAQ */
+        function openFAQFormat() {
+            document.getElementById('formatFaq').style.display = 'block';
+            document.getElementById('formatOverlay').style.display = 'block';
+        }
+        function closeFAQFormat() {
+            document.getElementById('formatFaq').style.display = 'none';
+            document.getElementById('formatOverlay').style.display = 'none';
+        }
+        function openFAQContent() {
+            document.getElementById('contentFaq').style.display = 'block';
+            document.getElementById('conentOverlay').style.display = 'block';
+        }
+        function closeFAQContext() {
+            document.getElementById('contentFaq').style.display = 'none';
+            document.getElementById('conentOverlay').style.display = 'none';
+        }
+
+
         async function submitText() {
             let urlInput = document.getElementById("urlInput").value.trim();
             let timeInput = document.getElementById("timeInput").value.trim();
@@ -144,9 +64,34 @@
     </script>
 </head>
 <body>
+    
+    <!-- Overlay FAQ content-->
+    <div class="overlay" id="formatOverlay" onclick="closeFAQFormat()"></div>
+    <div class="faqBox" id="formatFaq">
+        <p>
+        <strong>Format for URL Submission:</strong><br>
+        1. The URL should be a valid, full web address (e.g., https://example.com).<br>
+        2. The timestamp must follow the format: hh:mm MM/DD/YYYY.<br>
+        3. Ensure all fields are filled before submission.
+        </p>
+    </div>
+
+    <div class="overlay" id="conentOverlay" onclick="closeFAQContext()"></div>
+    <div class="faqBox" id="contentFaq">
+        <h3>Instructions for URL Submission:</h3>
+        <p>
+        <strong>Please submit URLs on entertainment / shopping / subjects (e.g. Sports news, macy clothings)</strong><br>
+        <strong>Please avoid submitting the following URLs </strong><br>
+        1. URLs contain personal identifier or lead to webpages with personal information (e.g. https://someone.github.io/) <br>
+        2. URLs that contain your personal information as a query (e.g. https://wandb.ai/name) <br>
+        </p>
+    </div>
+
+
+
     <div class="container">
         <div class="header">
-            <h1>Submit a Browsing History Entry</h1>
+            <h1>Submit a Browsing History Entry of 10 URLs</h1>
         </div>
         <form>
             <label for="urlInput">URL:</label>
@@ -155,11 +100,17 @@
             <label for="timeInput">Timestamp in 24-hour format (hh:mm MM/DD/YYYY):</label>
             <input type="text" id="timeInput" placeholder="e.g., 19:30 02/19/2025">
         </form>
+        
+        <div class="faq-buttons-container">
+            <button class="faqbutton" onclick="openFAQContent()">Submission Must-Know FAQ</button>
+            <button class="faqbutton" onclick="openFAQFormat()">Submission Format FAQ</button>
+        </div>
+
         <button onclick="submitText()">Submit</button>
         <p id="response"></p>
         <p id="submissionCount">Valid Submissions: 0</p>
         <div class="footer">
-            <p>&copy; CX_GROUP @ CMU LTI</p>
+            <p> CX_GROUP @ CMU LTI</p>
         </div>
     </div>
 </body>
