@@ -1,3 +1,11 @@
+html {
+    margin: 0;            /* Remove default margins */
+    padding: 0;           /* Remove default paddings */
+    height: 100%;         /* Full height for the viewport */
+    overflow-y: auto;     /* Enable vertical scrolling */
+}
+
+
 /* Base styling */
 body {
     font-family: Arial, sans-serif;
@@ -7,8 +15,9 @@ body {
     color: #333;
     display: flex;
     justify-content: center;
-    align-items: center;
-    height: 100vh;
+    align-items: center;    
+    height: 100%;
+    overflow-y: auto;    
 }
 
 /* Centered Container */
@@ -16,11 +25,19 @@ body {
     background-color: white;
     border-radius: 12px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    width: calc(100% - 40px);
-    max-width: 600px;
-    padding: 20px;
+    width: calc(100% - 100px); /* Full width minus 40px margin */
+    max-width: 1500px; /* Maximum width for large screens */
+    margin: 20px auto; /* Center the container */
+    padding: 20px; /* Extra space inside the container */
     text-align: center;
+    min-height: calc(100vh - 40px);
+    height: calc(100% - 100px);
+    /* min-height: calc(100% + 100px); Make container taller than its content */
+    box-sizing: border-box; /* Include padding/border in size */
+    overflow: hidden; /* Prevent content overflow */
+    overflow-y: auto;    
 }
+
 
 /* Header Section */
 .header {
@@ -34,8 +51,16 @@ h1 {
 }
 
 /* Input Fields */
+
+.input-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px; 
+}
+
 label {
-    font-size: 16px;
+    font-size: 12px;
     margin-bottom: 5px;
     display: block;
     text-align: left;
@@ -48,7 +73,7 @@ input[type="text"] {
     margin-bottom: 15px;
     border: 1px solid #ddd;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 12px;
     box-sizing: border-box;
 }
 
@@ -137,6 +162,12 @@ button:disabled {
     color: #333;
     font-size: 14px;
     margin-top: 10px;
+}
+
+.response-line {
+    font-size: 14px;
+    margin-top: 5px;
+    color: red;
 }
 
 /* Footer for Additional Information */

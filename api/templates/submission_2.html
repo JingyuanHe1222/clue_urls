@@ -8,6 +8,9 @@
 
     <script>
 
+        // Get number of entry per submission: default 10
+        var total_entry = 10; 
+
         /* FAQ */
         function openFAQFormat() {
             document.getElementById('formatFaq').style.display = 'block';
@@ -26,32 +29,141 @@
             document.getElementById('conentOverlay').style.display = 'none';
         }
 
-
+        /* Dynamically set the 10 input box */
+        document.addEventListener('DOMContentLoaded', function () {
+            const inputFieldsContainer = document.getElementById('inputFieldsContainer');
+            // Generate 10 sets of input fields (URL and timestamp)
+            for (let i = 0; i < total_entry; i++) {
+                const fieldSet = document.createElement('div');
+                fieldSet.classList.add('field-set');
+                fieldSet.innerHTML = `
+                    <div class="input-container"> 
+                    <label for="urlInput${i}">URL ${i + 1}:</label>
+                    <input type="text" id="urlInput${i}" placeholder="Enter the URL here..." required>
+                    
+                    <label for="timeInput${i}">Timestamp ${i + 1} (hh:mm MM/DD/YYYY):</label>
+                    <input type="text" id="timeInput${i}" placeholder="e.g., 19:30 02/19/2025" required>
+                    </div>
+                    <p id="response${i}" class="response-line" style="color: red; display: none;"></p>
+                     
+                `;
+                inputFieldsContainer.appendChild(fieldSet);
+            }
+        });
+        
+        /* One Submission */ 
         async function submitText() {
-            let urlInput = document.getElementById("urlInput").value.trim();
-            let timeInput = document.getElementById("timeInput").value.trim();
 
-            if (!urlInput || !timeInput) {
-                document.getElementById("response").innerText = "Please enter both a URL and a timestamp.";
+            document.getElementById("response").style.display = "block";
+            let allValid = true;
+            let records = {};
+            
+            for (let i = 0; i < total_entry; i++) {
+                const urlInput = document.getElementById(`urlInput${i}`).value.trim();
+                const timeInput = document.getElementById(`timeInput${i}`).value.trim();
+                const responseLine = document.getElementById(`response${i}`);
+
+                if (!urlInput || !timeInput) {
+                    responseLine.style.display = "block";
+                    responseLine.innerText = "Please enter both a URL and a timestamp.";
+                    allValid = false; 
+                    continue;
+                }
+                
+                // Reset response line display
+                responseLine.style.display = "none";
+
+                // Validate each entry via GET /submit
+                try {
+
+                    console.log(JSON.stringify({ url: urlInput, timestamp: timeInput })) // ***
+
+                    let validateResponse = await fetch("/validate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ url: urlInput, timestamp: timeInput })
+                    });
+
+                    let validateResult = await validateResponse.json();
+                    
+                    console.log("validationResult", validateResult) // ***
+
+                    if (!validateResponse.ok) {
+                        // Mark as invalid if the server responds with an error
+                        allValid = false;
+                        responseLine.textContent = validateResult.error;
+                        responseLine.style.display = "block";
+                    } else {
+                        new_record = true; 
+                        // check if the record is already here in the current form 
+                        for (const j in records) {
+                            // avoid duplicate urls in a single submission: urls can duplicate in different submission though
+                            if (validateResult["url"] == records[j]["url"]) {
+                                allValid = false;
+                                responseLine.textContent = "Invalid submission: you have already entered this URL in this submission.";
+                                responseLine.style.display = "block";
+                                new_record = false; 
+                                console.log(`Duplicate url-time pair in submission ${i}`); // ***
+                                break; // no need to check if more duplicate with the above 
+                            }
+                        }
+                        if (new_record) {
+                            // log results in case if all success
+                            records[i] = validateResult; 
+                            responseLine.textContent = ""
+                            responseLine.style.display = "none";
+                        }
+                    }
+                } catch (error) {
+                    allValid = false;
+                    responseLine.style.display = "block";
+                    responseLine.textContent = `Error in entry ${i + 1}: ${error.message}`;
+                }
+            }
+
+            // If not all entries are valid, stop processing
+            if (!allValid) {
+                document.getElementById("response").style.display = "block";
+                document.getElementById("response").textContent = "Please correct the invalid entries before submitting.";
                 return;
             }
 
-            let response = await fetch("/submit", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: urlInput, timestamp: timeInput })
-            });
+            // If all valid, submit all valid entries via POST request
+            try {
 
-            let result = await response.json();
-            document.getElementById("response").innerText = result.message || result.error;
+                console.log("all valid records: ", records) // ***
 
-            // Update submission count if submission is valid
-            if (response.ok) {
-                document.getElementById("urlInput").value = "";
-                document.getElementById("timeInput").value = "";
-                document.getElementById("submissionCount").innerText = `Valid Submissions: ${result.submission_count}`;
+                let submissionResponse = await fetch("/submit", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    // body: JSON.stringify({ submissions: submissionData })
+                    body: JSON.stringify({submissions: records})
+                });
+
+                let submissionResult = await submissionResponse.json();
+                document.getElementById("response").textContent = submissionResult.message || submissionResult.error;
+
+                if (submissionResponse.ok) {
+                    // Clear all inputs on successful submission
+                    for (let i = 0; i < total_entry; i++) {
+                        document.getElementById(`urlInput${i}`).value = "";
+                        document.getElementById(`timeInput${i}`).value = "";
+                        document.getElementById(`response${i}`).style.display = "none";
+                    }
+                    // Successful submission will get submission count update 
+                    document.getElementById("submissionCount").innerText = `Valid Submissions: ${submissionResult.submission_count}`;
+
+                }
+                document.getElementById("response").style.display = "block"
+                document.getElementById("response").textContent = "Successfully submitted!";
+            } catch (error) {
+                document.getElementById("response").style.display = "block"
+                document.getElementById("response").textContent = "An error occurred during submission.";
+                return; 
             }
+
         }
+
 
         // Fetch and display submission count on page load
         async function fetchSubmissionCount() {
@@ -65,53 +177,60 @@
 </head>
 <body>
     
-    <!-- Overlay FAQ content-->
-    <div class="overlay" id="formatOverlay" onclick="closeFAQFormat()"></div>
-    <div class="faqBox" id="formatFaq">
-        <p>
-        <strong>Format for URL Submission:</strong><br>
-        1. The URL should be a valid, full web address (e.g., https://example.com).<br>
-        2. The timestamp must follow the format: hh:mm MM/DD/YYYY.<br>
-        3. Ensure all fields are filled before submission.
-        </p>
-    </div>
-
-    <div class="overlay" id="conentOverlay" onclick="closeFAQContext()"></div>
-    <div class="faqBox" id="contentFaq">
-        <h3>Instructions for URL Submission:</h3>
-        <p>
-        <strong>Please submit URLs on entertainment / shopping / subjects (e.g. Sports news, macy clothings)</strong><br>
-        <strong>Please avoid submitting the following URLs </strong><br>
-        1. URLs contain personal identifier or lead to webpages with personal information (e.g. https://someone.github.io/) <br>
-        2. URLs that contain your personal information as a query (e.g. https://wandb.ai/name) <br>
-        </p>
-    </div>
-
-
-
     <div class="container">
+
+        <!-- Overlay FAQ content-->
+        <div class="overlay" id="formatOverlay" onclick="closeFAQFormat()">
+        </div>
+        <div class="faqBox" id="formatFaq">
+            <p>
+            <strong>Format for URL Submission:</strong><br>
+            1. The URL should be a valid, full web address (e.g., https://example.com).<br>
+            2. The timestamp must follow the format: hh:mm MM/DD/YYYY.<br>
+            3. Ensure all fields are filled before submission.
+            </p>
+        </div>
+
+        <div class="overlay" id="conentOverlay" onclick="closeFAQContext()"></div>
+        <div class="faqBox" id="contentFaq">
+            <h3>Instructions for URL Submission:</h3>
+            <p>
+            <strong>Please submit URLs on entertainment subjects (e.g. Sports news, shopping items)</strong><br>
+            <strong>Please avoid submitting the following URLs: </strong><br>
+            1. URLs contain personal identifier or lead to webpages with personal information (e.g. https://someone.github.io/) <br>
+            2. URLs that contain your personal information as a query (e.g. https://wandb.ai/name) <br>
+            3. URLs to search logs (e.g. https://www.google.com/search?q=query) <br>
+            </p>
+        </div>
+
+
         <div class="header">
             <h1>Submit a Browsing History Entry of 10 URLs</h1>
         </div>
-        <form>
-            <label for="urlInput">URL:</label>
-            <input type="text" id="urlInput" placeholder="Enter the URL here...">
-            
-            <label for="timeInput">Timestamp in 24-hour format (hh:mm MM/DD/YYYY):</label>
-            <input type="text" id="timeInput" placeholder="e.g., 19:30 02/19/2025">
-        </form>
-        
+
+        <!-- FAQ -->
         <div class="faq-buttons-container">
             <button class="faqbutton" onclick="openFAQContent()">Submission Must-Know FAQ</button>
             <button class="faqbutton" onclick="openFAQFormat()">Submission Format FAQ</button>
         </div>
 
+        <!-- Dynamic Number of Input Fields -->
+        <form>
+            <div id="inputFieldsContainer"></div>
+        </form>
+
         <button onclick="submitText()">Submit</button>
+
+        <!-- submission info specifics -->
         <p id="response"></p>
         <p id="submissionCount">Valid Submissions: 0</p>
+
+        <!-- footer -->
         <div class="footer">
             <p> CX_GROUP @ CMU LTI</p>
         </div>
+
     </div>
+
 </body>
 </html>

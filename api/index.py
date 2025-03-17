@@ -1,17 +1,22 @@
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os 
+import requests
 import uuid
 import validators
+
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse, parse_qs
 
 from flask import Flask, session, request, jsonify, render_template, make_response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
 
 
-from utils import *
-
+#############################################
+#################### Env ####################
+#############################################
 
 # ### env var ###
 load_dotenv(dotenv_path=".env.local")
@@ -26,7 +31,9 @@ if POSTGRES_URL and POSTGRES_URL.startswith("postgres://"):
 app = Flask(__name__)
 
 
-# ### datastore ### 
+#############################################
+################# Datastore #################
+#############################################
 app.secret_key = VALID_API_KEYS
 app.config["SQLALCHEMY_DATABASE_URI"] = POSTGRES_URL
 # init SQLAlchemy 
@@ -48,12 +55,129 @@ with app.app_context():
         db.create_all()
 
 
-# ### UI Interface ### 
+#############################################
+############### UI Interface ################
+#############################################
 
 # landing page 
 @app.route('/')
 def index():
-    return render_template('landing_2.html')
+    return render_template('landing.html')
+
+# landing page for user consent  
+@app.route('/consent')
+def landing_consent():
+    return render_template('landing_consent.html')
+
+# landing page for API authentication 
+@app.route('/auth')
+def landing_auth():
+    # This function renders the HTML template dynamically
+    return render_template('landing_auth.html')
+
+# url submission page 
+@app.route('/submission')
+def submission_page():
+    if not session.get('authenticated'):
+        return redirect(url_for('index'))  # Redirect to API key page if not authenticated
+    return render_template('submission_2.html')
+
+
+#############################################
+############### Utility Functions ###########
+#############################################
+
+def is_url_accessible(url):
+    try:
+        url_session = requests.Session()
+        # User-Agent header to mimic a browser
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+        }
+        # request with headers and session
+        url_session.cookies.clear()
+        response = url_session.get(url, headers=headers, timeout=10, allow_redirects=False)
+
+        # output code in log 
+        print("response.status_code: ", response.status_code)
+
+        if response.status_code in [401, 403, 404]:  
+            return False
+        return response.status_code == 200
+    
+    except requests.RequestException as e:
+        print(f"Request failed: {e}")
+        return False
+    
+def is_generated_page(url):
+
+    # criteria 1: query or search operator 
+    def contains_query_optr(url): 
+        parsed_url = urlparse(url)
+        if len(parse_qs(parsed_url.query)) > 2: 
+            return True
+        if "search" in parsed_url.path or "query" in parsed_url.query:  
+            return True
+    
+    # criteria 2: link structure 
+    def is_mostly_links(soup):
+        # links outnumber paragraphs significantly, assume it's a generated page
+        links = soup.find_all("a")
+        paragraphs = soup.find_all("p")
+        text_length = len(soup.get_text(strip=True))
+        return len(links) > 5 * len(paragraphs) and text_length < 100
+
+    # c1: url link inpsection 
+    if contains_query_optr(url):  
+        return True 
+    
+    print("not query optr")
+    # c2-c3: bs4 related processing 
+    try:
+        response = requests.get(url, timeout=10)
+        soup = BeautifulSoup(response.text, "html.parser")
+    except requests.RequestException:
+        print("error retrieving the page...")    
+        return True
+    print("can load")
+    if is_mostly_links(soup): 
+        return True 
+
+    return False
+
+def validate_timestamp(timestamp_str): 
+    try:
+        # Parse the timestamp using the specified format
+        timestamp = datetime.strptime(timestamp_str, "%H:%M %m/%d/%Y")
+        # Check if the timestamp is within 1 year from the current time
+        now = datetime.now()  # Current date and time
+        print("now: ", now)
+        past_year = now - timedelta(days=365)
+        print("oneyear now: ", past_year)
+        if past_year <= timestamp <= now:
+            return timestamp, True 
+        else:
+            return "Invalid timestamp. Timestamp submitted is either too old (older than 1 year) or is invalid (future time)", False
+    except ValueError:
+        return "Invalid timestamp format. Use hh:mm MM/DD/YYYY. (24 hours format)", False
+
+#############################################
+############# Backend Methods ###############
+#############################################
+
+# API key forward
+@app.route('/get-api-key', methods=['GET'])
+def get_api_key():
+    api_key = os.getenv("API_KEY")
+    return jsonify({"api_key": api_key})
+
+
+# Get number of entry per submission 
+@app.route('/get-num-entry', methods=['GET'])
+def get_num_entry():
+    num_entry = os.getenv("NUM_ENTRY")
+    return jsonify({"num_entry": num_entry})
+
 
 # authenticate to reach submission forum 
 @app.route('/authenticate', methods=['POST'])
@@ -76,13 +200,6 @@ def authenticate():
     else:
         return jsonify({"error": "Invalid API key!"}), 401
 
-# url submission page 
-@app.route('/submission')
-def submission_page():
-    if not session.get('authenticated'):
-        return redirect(url_for('index'))  # Redirect to API key page if not authenticated
-    return render_template('submission_2.html')
-
 
 # check user submissions 
 @app.route('/submission_count', methods=['GET'])
@@ -93,8 +210,8 @@ def get_submission_count():
 
 
 # Handle text submission
-@app.route('/submit', methods=['POST'])
-def submit_text():
+@app.route('/validate', methods=['POST'])
+def validate_entry():
 
     if not session.get('authenticated'):
         return jsonify({"error": "Unauthorized access!"}), 403
@@ -106,10 +223,10 @@ def submit_text():
     # check if user input is valid as a submission record 
     if not url or not timestamp_str:
         return jsonify({"error": "Both URL and timestamp are required."}), 400
-    try:
-        timestamp = datetime.strptime(timestamp_str, "%H:%M %m/%d/%Y")
-    except ValueError:
-        return jsonify({"error": "Invalid timestamp format. Use hh:mm MM/DD/YYYY. (24 hours format)"}), 400
+    timestamp, valid_time = validate_timestamp(timestamp_str)
+    if not valid_time:
+        # for invalid timestamp, str returned is error cause 
+        return jsonify({"error": timestamp}), 400
     if not validators.url(url): 
         return jsonify({"error": "Please input a valid URL."}), 400
         
@@ -130,14 +247,39 @@ def submit_text():
         user_id = str(uuid.uuid4())
 
     # if duplicate -> count as invalid
-    existing_urls = URLs.query.filter_by(user_id=user_id, url=url, timestamp=unix_time).first()
+    existing_urls = URLs.query.filter_by(user_id=user_id, worker_id=worker_id, url=url, timestamp=unix_time).first()
     if existing_urls:
         return jsonify({"error": "Invalid submission: you have already submitted this URL at the exact same timestamp."}), 400
 
-    # save 
-    new_record = URLs(user_id=user_id, worker_id=worker_id, url=url, timestamp=unix_time)
-    db.session.add(new_record)
-    db.session.commit()
+
+    response = make_response(jsonify({
+        "url": url,
+        "user_id": user_id, 
+        "worker_id": worker_id, 
+        "timestamp": unix_time, 
+    }))
+    return response
+    
+
+# Handle text submission
+@app.route('/submit', methods=['POST'])
+def submit_text():
+
+    if not session.get('authenticated'):
+        return jsonify({"error": "Unauthorized access!"}), 403
+
+    data = request.json
+    submission = data.get("submissions", {})
+
+    # save each entry 
+    for pair in submission: 
+
+        user_id, worker_id, url, unix_time = submission[pair]
+
+        # save 
+        new_record = URLs(user_id=user_id, worker_id=worker_id, url=url, timestamp=unix_time)
+        db.session.add(new_record)
+        db.session.commit()
 
     # update number of valid submission (no matter in domain or not)
     submission_count = int(request.cookies.get("submission_count", 0)) + 1

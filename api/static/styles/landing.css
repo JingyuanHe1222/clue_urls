@@ -1,3 +1,11 @@
+html {
+    margin: 0;            /* Remove default margins */
+    padding: 0;           /* Remove default paddings */
+    height: 100%;         /* Full height for the viewport */
+    overflow-y: auto;     /* Enable vertical scrolling */
+}
+
+
 /* Base Styling */
 body {
     font-family: Arial, sans-serif;
@@ -7,8 +15,8 @@ body {
     color: #333;
     display: flex;
     justify-content: center;
-    align-items: center;
-    height: 100vh;
+    align-items: center;    
+    overflow-y: auto;     /* Enable vertical scrolling */
 }
 
 /* Centered Container */
@@ -16,12 +24,38 @@ body {
     background-color: white;
     border-radius: 12px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    width: calc(100% - 40px); /* Full width minus 40px total margin (20px on each side) */
-    max-width: 1200px; /* Optional: Set a max width for larger screens */
-    margin: 20px auto; /* Center container with margin */
-    padding: 20px; /* Inner padding inside the container */
+    width: calc(100% - 100px); /* Full width minus 40px margin */
+    max-width: 1500px; /* Maximum width for large screens */
+    margin: 20px auto; /* Center the container */
+    padding: 20px; /* Extra space inside the container */
     text-align: center;
+    min-height: calc(100vh - 40px);
+    /* min-height: calc(100% + 100px); Make container taller than its content */
+    box-sizing: border-box; /* Include padding/border in size */
+    overflow: visible; /* Prevent content overflow */
+    overflow-y: auto;     /* Enable vertical scrolling */
 }
+
+iframe {
+    width: 70%; /* Responsive width to fit inside the container */
+    height: 600px; /* Fixed height for consistency */
+    max-height: 80%; /* Prevents the iframe from becoming too large */
+    border: none; /* Remove default iframe borders */
+    box-sizing: border-box; /* Consistent sizing with padding */
+}
+
+.header img {
+    max-width: 100%;       /* Ensure the image doesn't exceed its container width */
+    height: 100%;          /* Maintain the aspect ratio */
+    display: block;        /* Remove extra whitespace caused by inline images */
+    margin: 0 auto 20px;   /* Center the image and add space below */
+    box-sizing: border-box;
+}
+
+.header p {
+    margin: 5% 10%; /* 0 for top and bottom, 5% for left and right */
+}
+
 /* Header */
 h1 {
     font-size: 24px;
@@ -45,7 +79,7 @@ input[type="text"]:focus {
     box-shadow: 0 0 5px rgba(108, 99, 255, 0.5);
 }
 
-/* Submit Button */
+/* Button */
 button {
     background-color: #6c63ff;
     color: white;
@@ -63,6 +97,28 @@ button:disabled {
     background-color: #ddd;
     cursor: not-allowed;
 }
+
+/* Special Agree and Decline Button */
+#consentButtonContainer {
+    display: flex;
+    justify-content: center; /* Align buttons horizontally */
+    gap: 20px; /* Add space between buttons */
+    margin-top: 20px; /* Optional: Add spacing from other elements */
+}
+
+/* API Key Container */
+.api-container {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #eef0ff;
+    border: 1px solid #6c63ff;
+    border-radius: 8px;
+    display: none;
+}
+#api-container {
+    display: none;
+}
+
 
 #error {
     color: red;

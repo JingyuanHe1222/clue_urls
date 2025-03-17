@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Collector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/landing.css') }}" type="text/css">
+
+    <script>
+        async function continueToConsent() {
+            window.location.href = '/consent';
+        }
+
+    </script>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <img src="{{ url_for('static', filename='images/cmu-scotty.png') }}" alt="CMU Logo" width="150" height="150">
+            <h1>Welcome to Browsing URL Sequence Study</h1>
+            <h3> Protocol Number: STUDY2025_00000079 </h3>
+
+            <p>
+                This study collects browsing URL sequences to investigate the browsing behaviors of Internet 
+                participants. Participants will upload their recent browsing history (a sequence of URLs) to a 
+                web interface we provide.  
+            </p>
+        </div>
+
+        <button onclick="continueToConsent()" style="max-width: 600px;">Continue</button>
+        
+        <div class="footer">
+            <p>CX_GROUP @ CMU LTI</p>
+        </div>
+    </div>
+</body>
+</html>

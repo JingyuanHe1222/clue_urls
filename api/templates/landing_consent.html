@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consent Form</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/landing.css') }}" type="text/css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ url_for('static', filename='images/cmu-scotty.png') }}" alt="CMU Logo">
+        </div>
+        <h1>Consent Form</h1>
+        <iframe src="{{ url_for('static', filename='files/cmu-irb-online-consent-prolific.docx.pdf') }}"></iframe>
+        <h3>Worker ID: </h3>
+        <input type="text" id="workerID" placeholder="Enter your Worker ID">
+        <!--Consent Button-->
+        <div id="consentButtonContainer">
+            <button id="agreeButton">Agree</button>
+            <button id="declineButton">Decline</button>
+        </div>
+        <!--Display API Key-->
+        <div class="api-container" id="apiContainer">
+            <p>Here is your API key: <strong>1234-5678-API-KEY</strong></p>
+            <button onclick="copyApiKey()">Copy API Key</button>
+        </div>
+        
+        <div class="footer">
+            <p>CX_GROUP @ CMU LTI</p>
+        </div>
+    </div>
+
+
+    <script>
+
+        document.getElementById('agreeButton').addEventListener('click', function () {
+            const workerID = document.getElementById('workerID').value.trim();
+            if (!workerID) {
+                alert('Please enter your Worker ID before proceeding.');
+                return;
+            }
+
+            // Fetch the API key only after the Worker ID is entered and "Agree" is clicked
+            fetch('/get-api-key')
+                .then(response => response.json())
+                .then(data => {
+                    const apiContainer = document.getElementById("apiContainer");
+                    apiContainer.style.display = "block"; // Show the API key container
+                    apiContainer.innerHTML = `<p>Here is your API key: <strong>${data.api_key}</strong></p>
+                                            <button onclick="copyApiKey('${data.api_key}')">Copy API Key</button>`;
+                })
+                .catch(error => {
+                    console.error("Error fetching API Key:", error);
+                    alert("Could not fetch the API key. Please try again later.");
+                });
+
+            // Redirect after a delay of 10 s
+            setTimeout(() => {
+                window.location.href = '/auth';
+            }, 10000);
+        });
+
+        /* Copy API Key */
+        function copyApiKey(apiKey) {
+
+            navigator.clipboard.writeText(apiKey).then(() => {
+            
+            alert('API Key copied to clipboard!');
+            
+            // Redirect after a successful copy
+            window.location.href = '/auth';
+            }).catch((error) => {
+                console.error("Error copying API Key:", error);
+                alert('Failed to copy the API Key. Please try again.');
+            });
+
+        }
+
+        document.getElementById('declineButton').addEventListener('click', function() {
+            const workerID = document.getElementById('workerID').value.trim();
+            if (!workerID) {
+                alert('Please enter your Worker ID before proceeding.');
+                return;
+            }
+            alert('You may now exit.');
+            window.close();
+        });
+
+    </script>
+</body>
+</html>
