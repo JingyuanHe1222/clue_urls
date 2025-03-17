@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os 
 import requests
+import time 
 import uuid
 import validators
 
@@ -111,15 +112,15 @@ def is_url_accessible(url):
         url_session.cookies.clear()
         response = url_session.get(url, headers=headers, timeout=10, allow_redirects=False)
 
-        # output code in log 
-        print("response.status_code: ", response.status_code)
-
-        if response.status_code in [401, 403, 404]:  
-            return False
-        return response.status_code == 200
+        # retry 5 times with  
+        for _ in range(3):
+            time.sleep(_*2) # max wait 6s
+            url_session.cookies.clear()
+            response = url_session.get(url, headers=headers, timeout=10, allow_redirects=False)
+            if 200 <= response.status_code < 300: 
+                return True 
     
     except requests.RequestException as e:
-        print(f"Request failed: {e}")
         return False
     
 def is_generated_page(url):
@@ -138,24 +139,20 @@ def is_generated_page(url):
         links = soup.find_all("a")
         paragraphs = soup.find_all("p")
         text_length = len(soup.get_text(strip=True))
-        return len(links) > 5 * len(paragraphs) and text_length < 100
+        return len(links) > 5 * len(paragraphs) and text_length < 50
 
     # c1: url link inpsection 
     if contains_query_optr(url):  
         return True 
     
-    print("not query optr")
     # c2-c3: bs4 related processing 
     try:
         response = requests.get(url, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
     except requests.RequestException:
-        print("error retrieving the page...")    
         return True
-    print("can load")
     if is_mostly_links(soup): 
         return True 
-
     return False
 
 def validate_date(date_str): 
