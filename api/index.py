@@ -47,6 +47,8 @@ class URLs(db.Model):
     user_id = db.Column(db.String(80), nullable=False)
     worker_id = db.Column(db.String(80), nullable=False)  # Add this line
     url = db.Column(db.String(2083), nullable=False)
+    date = db.Column(db.String(80), nullable=False) 
+    day_time = db.Column(db.String(80), nullable=False) 
     timestamp = db.Column(db.String(80), nullable=False) 
 
 class DATEs(db.Model):
@@ -238,6 +240,14 @@ def validate_date_entry():
     date, valid_date = validate_date(date_str)
     if not valid_date: 
         return jsonify({"error": date}), 400
+    
+    # check if the date is submitted by this user already 
+    worker_id = request.cookies.get("worker_id")
+    user_id = request.cookies.get("user_id")
+    existing_submission = DATEs.query.filter_by(user_id=user_id, worker_id=worker_id, date=date_str).first()
+    if existing_submission:
+        return jsonify({"error": "Invalid submission: you have already submitted the browsing history for this date."}), 400
+
     response = make_response(jsonify({
         "date": date_str,
     }))
@@ -272,7 +282,7 @@ def validate_entry():
         return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL."}), 400
     # check if url not generated 
     if is_generated_page(url): 
-        return jsonify({"error": f"Invalid submission: URL submitted is a generated page. Please do not submit URL like search engines results. "}), 400
+        return jsonify({"error": f"Invalid submission: URL submitted is generated page / online files / search results, etc. Please refer to the Submission Must-Know FAQ. "}), 400
 
     unix_time = str(int(timestamp.timestamp()))
 
@@ -283,14 +293,16 @@ def validate_entry():
         user_id = str(uuid.uuid4())
 
     # if duplicate -> count as invalid
-    existing_urls = URLs.query.filter_by(user_id=user_id, worker_id=worker_id, url=url, timestamp=unix_time).first()
+    existing_urls = URLs.query.filter_by(user_id=user_id, worker_id=worker_id, url=url, day_time=time_str).first()
     if existing_urls:
-        return jsonify({"error": "Invalid submission: you have already submitted this URL at the exact same timestamp."}), 400
+        return jsonify({"error": "Invalid submission: you have already submitted this URL at the exact same time of another day."}), 400
 
     response = make_response(jsonify({
         "url": url,
         "user_id": user_id, 
         "worker_id": worker_id, 
+        "day_time": time_str, 
+        "date": date_str, 
         "timestamp": unix_time, 
     }))
     return response
@@ -339,13 +351,13 @@ def submit_text():
 
         user_id, worker_id = submission[pair]["user_id"], submission[pair]["worker_id"]
         url, unix_time = submission[pair]["url"], submission[pair]["timestamp"]
+        date, day_time = submission[pair]["date"], submission[pair]["day_time"]
 
-        print(f"user_id: {user_id}, worker_id: {worker_id}, url: {url}, unix_time: {unix_time}")
-        if not user_id or not worker_id or not url or not unix_time: 
+        if not user_id or not worker_id or not url or not unix_time or not day_time: 
             return jsonify({"error": "Submission corrupted!"}), 403
 
         # save 
-        new_record = URLs(user_id=user_id, worker_id=worker_id, url=url, timestamp=unix_time)
+        new_record = URLs(user_id=user_id, worker_id=worker_id, url=url, timestamp=unix_time, date=date, day_time=day_time)
         db.session.add(new_record)
         db.session.commit()
 
