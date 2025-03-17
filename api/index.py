@@ -23,6 +23,7 @@ load_dotenv(dotenv_path=".env.local")
 
 VALID_API_KEYS = [os.getenv("API_KEY")]
 TABLE_NAME = os.getenv("TABLE_NAME")
+DATE_TABLE_NAME = os.getenv("DATE_TABLE_NAME")
 POSTGRES_URL = os.getenv("POSTGRES_URL")
 if POSTGRES_URL and POSTGRES_URL.startswith("postgres://"):
     POSTGRES_URL = POSTGRES_URL.replace("postgres://", "postgresql://", 1)
@@ -47,11 +48,21 @@ class URLs(db.Model):
     worker_id = db.Column(db.String(80), nullable=False)  # Add this line
     url = db.Column(db.String(2083), nullable=False)
     timestamp = db.Column(db.String(80), nullable=False) 
+
+class DATEs(db.Model):
+    __tablename__ = DATE_TABLE_NAME
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.String(80), nullable=False)
+    worker_id = db.Column(db.String(80), nullable=False)  # Add this line
+    date = db.Column(db.String(80), nullable=False) 
+
        
 # create model 
 with app.app_context():
     inspector = inspect(db.engine)
     if not inspector.has_table("urls"):
+        db.create_all()
+    if not inspector.has_table("dates"):
         db.create_all()
 
 
@@ -145,21 +156,27 @@ def is_generated_page(url):
 
     return False
 
+def validate_date(date_str): 
+    try:
+        # Parse the date using the specified format
+        date = datetime.strptime(date_str, "%m/%d/%Y")
+        # Check if the date is within 1 year from the current time
+        now = datetime.now() 
+        past_year = now - timedelta(days=365)
+        if past_year <= date <= now:
+            return date, True 
+        else:
+            return "Invalid date. Date submitted is either too old (older than 1 year) or is invalid (future time)", False
+    except ValueError:
+        return "Invalid date. Please format date input as MM/DD/YYYY", False
+    
 def validate_timestamp(timestamp_str): 
     try:
         # Parse the timestamp using the specified format
         timestamp = datetime.strptime(timestamp_str, "%H:%M %m/%d/%Y")
-        # Check if the timestamp is within 1 year from the current time
-        now = datetime.now()  # Current date and time
-        print("now: ", now)
-        past_year = now - timedelta(days=365)
-        print("oneyear now: ", past_year)
-        if past_year <= timestamp <= now:
-            return timestamp, True 
-        else:
-            return "Invalid timestamp. Timestamp submitted is either too old (older than 1 year) or is invalid (future time)", False
+        return timestamp, True 
     except ValueError:
-        return "Invalid timestamp format. Use hh:mm MM/DD/YYYY. (24 hours format)", False
+        return "Invalid timestamp format. Use hh:mm. (24 hours format)", False
 
 #############################################
 ############# Backend Methods ###############
@@ -209,7 +226,25 @@ def get_submission_count():
     return jsonify({"user_id": user_id, "submission_count": submission_count})
 
 
-# Handle text submission
+# check if the submission date is valid 
+@app.route('/validate_date', methods=['POST'])
+def validate_date_entry(): 
+
+    if not session.get('authenticated'):
+        return jsonify({"error": "Unauthorized access!"}), 403
+
+    data = request.json
+    date_str = data.get("date", "").strip()
+    date, valid_date = validate_date(date_str)
+    if not valid_date: 
+        return jsonify({"error": date}), 400
+    response = make_response(jsonify({
+        "date": date_str,
+    }))
+    return response
+
+
+# check if an url-time entry is valid   
 @app.route('/validate', methods=['POST'])
 def validate_entry():
 
@@ -218,7 +253,9 @@ def validate_entry():
 
     data = request.json
     url = data.get("url", "").strip()
-    timestamp_str = data.get("timestamp", "").strip()
+    time_str = data.get("timestamp", "").strip()
+    date_str = data.get("date", "").strip()
+    timestamp_str = f"{time_str} {date_str}"
 
     # check if user input is valid as a submission record 
     if not url or not timestamp_str:
@@ -237,7 +274,6 @@ def validate_entry():
     if is_generated_page(url): 
         return jsonify({"error": f"Invalid submission: URL submitted is a generated page. Please do not submit URL like search engines results. "}), 400
 
-
     unix_time = str(int(timestamp.timestamp()))
 
     worker_id = request.cookies.get("worker_id")
@@ -251,7 +287,6 @@ def validate_entry():
     if existing_urls:
         return jsonify({"error": "Invalid submission: you have already submitted this URL at the exact same timestamp."}), 400
 
-
     response = make_response(jsonify({
         "url": url,
         "user_id": user_id, 
@@ -261,7 +296,35 @@ def validate_entry():
     return response
     
 
-# Handle text submission
+# submit a date for a submission entry: ensure no repeated dates
+@app.route('/submit_date', methods=['POST'])
+def submit_date():
+
+    if not session.get('authenticated'):
+        return jsonify({"error": "Unauthorized access!"}), 403
+
+    data = request.json
+    user_id = data.get("user_id", {})
+    worker_id = data.get("worker_id", {})
+    date = data.get("date", {})
+
+    if not user_id or not worker_id or not date: 
+        return jsonify({"error": "Submission date input is corrupted!"}), 403
+    
+    # save 
+    new_record = DATEs(user_id=user_id, worker_id=worker_id, date=date)
+    db.session.add(new_record)
+    db.session.commit()
+    response = make_response(jsonify({
+        "message": "DATEs workload saved successfully!",
+        "user_id": user_id,
+        "worker_id": worker_id,
+        "date": date, 
+    }))
+    return response 
+
+
+# handle text submission
 @app.route('/submit', methods=['POST'])
 def submit_text():
 
@@ -274,7 +337,12 @@ def submit_text():
     # save each entry 
     for pair in submission: 
 
-        user_id, worker_id, url, unix_time = submission[pair]
+        user_id, worker_id = submission[pair]["user_id"], submission[pair]["worker_id"]
+        url, unix_time = submission[pair]["url"], submission[pair]["timestamp"]
+
+        print(f"user_id: {user_id}, worker_id: {worker_id}, url: {url}, unix_time: {unix_time}")
+        if not user_id or not worker_id or not url or not unix_time: 
+            return jsonify({"error": "Submission corrupted!"}), 403
 
         # save 
         new_record = URLs(user_id=user_id, worker_id=worker_id, url=url, timestamp=unix_time)

@@ -67,6 +67,13 @@ label {
     color: #555;
 }
 
+.date-label {
+    margin-top: 10px;
+    font-size: 16px;
+    text-align: center; /* Centers the text */
+    width: 100%; 
+}
+
 input[type="text"] {
     width: 100%;
     padding: 12px;

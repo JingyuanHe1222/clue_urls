@@ -9,7 +9,7 @@
     <script>
 
         // Get number of entry per submission: default 10
-        var total_entry = 10; 
+        var total_entry = 2; 
 
         /* FAQ */
         function openFAQFormat() {
@@ -41,8 +41,8 @@
                     <label for="urlInput${i}">URL ${i + 1}:</label>
                     <input type="text" id="urlInput${i}" placeholder="Enter the URL here..." required>
                     
-                    <label for="timeInput${i}">Timestamp ${i + 1} (hh:mm MM/DD/YYYY):</label>
-                    <input type="text" id="timeInput${i}" placeholder="e.g., 19:30 02/19/2025" required>
+                    <label for="timeInput${i}">Timestamp ${i + 1} (hh:mm):</label>
+                    <input type="text" id="timeInput${i}" placeholder="e.g., 19:30" required>
                     </div>
                     <p id="response${i}" class="response-line" style="color: red; display: none;"></p>
                      
@@ -54,10 +54,38 @@
         /* One Submission */ 
         async function submitText() {
 
-            document.getElementById("response").style.display = "block";
+            // remove overall error line first
+            document.getElementById("response").style.display = "none"; 
+            const responseDate = document.getElementById(`responseDate`);
+            responseDate.style.display = "none";
+
+            // check whether a date is entered and whether it is valid 
+            const dateInput = document.getElementById(`date`).value.trim();
+            if (!dateInput) {
+                responseDate.style.display = "block";
+                responseDate.innerText = "Please enter enter a valid date in format: MM/DD/YYYY";
+            } else {
+                responseDate.style.display = "none";
+                responseDate.innerText = "";
+            }
+
+            let validateDateResponse = await fetch("/validate_date", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ date: dateInput})
+            });
+            let validateDateResult = await validateDateResponse.json();
+            console.log("validateDateResult: ", validateDateResult) // *** 
+            if (!validateDateResponse.ok) {
+                responseDate.textContent = validateDateResult.error;
+                responseDate.style.display = "block";
+                return; 
+            }
+
             let allValid = true;
             let records = {};
             
+            // check if each url entry is vaalid 
             for (let i = 0; i < total_entry; i++) {
                 const urlInput = document.getElementById(`urlInput${i}`).value.trim();
                 const timeInput = document.getElementById(`timeInput${i}`).value.trim();
@@ -81,7 +109,7 @@
                     let validateResponse = await fetch("/validate", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ url: urlInput, timestamp: timeInput })
+                        body: JSON.stringify({ url: urlInput, timestamp: timeInput, date: dateInput})
                     });
 
                     let validateResult = await validateResponse.json();
@@ -129,6 +157,25 @@
             }
 
             // If all valid, submit all valid entries via POST request
+
+            try {
+                let submissionDateResponse = await fetch("/submit_date", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({"user_id": records[0]["user_id"], "worker_id": records[0]["worker_id"], date: dateInput})
+                });
+                let submissionDateResult = await submissionDateResponse.json();
+                document.getElementById("response").textContent = submissionDateResult.message || submissionDateResult.error;
+                if (!submissionDateResponse.ok) {
+                    document.getElementById("response").style.display = "block"
+                    document.getElementById("response").textContent = "An error occurred during submission.";
+                }
+            } catch (error) {
+                document.getElementById("response").style.display = "block"
+                document.getElementById("response").textContent = "An error occurred during submission.";
+                return; 
+            }
+
             try {
 
                 console.log("all valid records: ", records) // ***
@@ -136,8 +183,7 @@
                 let submissionResponse = await fetch("/submit", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    // body: JSON.stringify({ submissions: submissionData })
-                    body: JSON.stringify({submissions: records})
+                    body: JSON.stringify({"submissions": records})
                 });
 
                 let submissionResult = await submissionResponse.json();
@@ -145,6 +191,9 @@
 
                 if (submissionResponse.ok) {
                     // Clear all inputs on successful submission
+                    document.getElementById(`date`).value = "";
+                    responseDate.innerText = ""
+                    responseDate.style.display = "none"
                     for (let i = 0; i < total_entry; i++) {
                         document.getElementById(`urlInput${i}`).value = "";
                         document.getElementById(`timeInput${i}`).value = "";
@@ -186,8 +235,9 @@
             <p>
             <strong>Format for URL Submission:</strong><br>
             1. The URL should be a valid, full web address (e.g., https://example.com).<br>
-            2. The timestamp must follow the format: hh:mm MM/DD/YYYY.<br>
-            3. Ensure all fields are filled before submission.
+            2. The date must follow the format: MM/DD/YYYY. <br>
+            3. The timestamp must follow the format: hh:mm. <br>
+            4. Ensure all fields are filled before submission.
             </p>
         </div>
 
@@ -195,7 +245,8 @@
         <div class="faqBox" id="contentFaq">
             <h3>Instructions for URL Submission:</h3>
             <p>
-            <strong>Please submit URLs on entertainment subjects (e.g. Sports news, shopping items)</strong><br>
+            <strong>You will use the form in this page to submit 10 URLs from your browsing history at any date in the past year.</strong><br>
+            <strong>Please submit URLs on entertainment subjects</strong> (e.g. Sports news, shopping items)<br>
             <strong>Please avoid submitting the following URLs: </strong><br>
             1. URLs contain personal identifier or lead to webpages with personal information (e.g. https://someone.github.io/) <br>
             2. URLs that contain your personal information as a query (e.g. https://wandb.ai/name) <br>
@@ -214,8 +265,13 @@
             <button class="faqbutton" onclick="openFAQFormat()">Submission Format FAQ</button>
         </div>
 
-        <!-- Dynamic Number of Input Fields -->
+        <!-- Submission Form -->
         <form>
+            <!-- Date -->
+            <label for="date" class="date-label"><b>Enter the date which you visited the following URLs here: </b></label>
+            <input type="text" id="date" placeholder="MM/DD/YYYY" required>
+            <p id="responseDate" class="response-line" style="color: red; display: none;"></p>
+            <!-- Dynamic Number of Input Fields -->
             <div id="inputFieldsContainer"></div>
         </form>
 
