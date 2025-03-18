@@ -8,3 +8,4 @@ dotenv
 bs4
 webdriver-manager
 selenium
+chromedriver-binary

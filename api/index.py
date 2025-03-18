@@ -13,12 +13,15 @@ from urllib.parse import urlparse, parse_qs
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-
+import chromedriver_binary  # Adds chromedriver binary to path
 
 from flask import Flask, session, request, jsonify, render_template, make_response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
 
+
+
+driver = webdriver.Chrome()
 
 #############################################
 #################### Env ####################
@@ -114,9 +117,10 @@ options.set_capability("goog:loggingPrefs", {"performance": "ALL"})  # Enable ne
 
 chrome_path = "/usr/bin/chromium-browser"
 chromedriver_path = "/usr/bin/chromedriver" 
-
-service = Service(chromedriver_path)
-driver = webdriver.Chrome(service=service, options=options)
+# 
+# service = Service(chromedriver_path)
+# driver = webdriver.Chrome(service=service, options=options)
+driver = webdriver.Chrome()
 
 driver.set_page_load_timeout(10)
 driver.set_script_timeout(5) 
