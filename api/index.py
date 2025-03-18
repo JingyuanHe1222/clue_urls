@@ -2,13 +2,18 @@
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os 
+import re 
 import requests
-import time 
 import uuid
 import validators
 
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, parse_qs
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+
 
 from flask import Flask, session, request, jsonify, render_template, make_response
 from flask_sqlalchemy import SQLAlchemy
@@ -101,59 +106,136 @@ def submission_page():
 ############### Utility Functions ###########
 #############################################
 
-def is_url_accessible(url):
-    try:
-        url_session = requests.Session()
-        # User-Agent header to mimic a browser
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
-        }
-        # request with headers and session
-        url_session.cookies.clear()
-        response = url_session.get(url, headers=headers, timeout=10, allow_redirects=False)
 
-        # retry 5 times with  
-        for _ in range(3):
-            time.sleep(_*2) # max wait 6s
-            url_session.cookies.clear()
-            response = url_session.get(url, headers=headers, timeout=10, allow_redirects=False)
-            if 200 <= response.status_code < 300: 
-                return True 
+options = Options()
+options.add_argument("--no-sandbox")  # Fix permission issues in WSL
+options.add_argument("--headless")
+options.set_capability("goog:loggingPrefs", {"performance": "ALL"})  # Enable network logs
+
+chrome_path = "/usr/bin/chromium-browser"
+chromedriver_path = "/usr/bin/chromedriver" 
+
+service = Service(chromedriver_path)
+driver = webdriver.Chrome(service=service, options=options)
+
+driver.set_page_load_timeout(10)
+driver.set_script_timeout(5) 
+
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+}
+
+def clear_driver_logs():
+    try:
+        driver.get_log("performance")  # Read logs once to clear them
+    except:
+        pass 
     
-    except requests.RequestException as e:
-        return False
-    
-def is_generated_page(url):
+
+
+#############################################
+############### Input Validations ###########
+#############################################
+
+
+
+def is_generated_page(url, response_text): 
 
     # criteria 1: query or search operator 
     def contains_query_optr(url): 
         parsed_url = urlparse(url)
-        if len(parse_qs(parsed_url.query)) > 2: 
-            return True
         if "search" in parsed_url.path or "query" in parsed_url.query:  
             return True
     
+    def url_keywords(url): 
+        # Define search-related keywords
+        search_patterns = [r"[?&]q=", r"[?&]query=",r"[?&]keyword=",r"/search",r"/sr\?"]
+        for pattern in search_patterns: 
+            matched = re.search(pattern, url, re.IGNORECASE)
+            if matched: 
+                return matched
+        return None
+
     # criteria 2: link structure 
     def is_mostly_links(soup):
         # links outnumber paragraphs significantly, assume it's a generated page
         links = soup.find_all("a")
         paragraphs = soup.find_all("p")
-        text_length = len(soup.get_text(strip=True))
+        text_length = len(soup.get_text(strip=True).replace("\n", ""))
         return len(links) > 5 * len(paragraphs) and text_length < 50
-
-    # c1: url link inpsection 
-    if contains_query_optr(url):  
-        return True 
     
-    # c2-c3: bs4 related processing 
-    try:
-        response = requests.get(url, timeout=10)
-        soup = BeautifulSoup(response.text, "html.parser")
-    except requests.RequestException:
-        return True
-    if is_mostly_links(soup): 
-        return True 
-    return False
+    soup = BeautifulSoup(response_text, "html.parser")
+    return contains_query_optr(url) or url_keywords(url) or is_mostly_links(soup)
+
+
+def url_validator(url): 
+
+    clear_driver_logs()
+    driver.get(url)
+
+    # get likely static content 
+    response = requests.get(url, timeout=10, headers=headers, allow_redirects=False)
+
+    if response.status_code < 200 or response.status_code >= 300: 
+        return False, "Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL."
+    if is_generated_page(url, response.text): 
+        return False, "Invalid submission: URL submitted is generated page / online files, etc. Please refer to the Submission Must-Know FAQ. "
+    return True, ""
+
+
+# def is_url_accessible(url):
+#     try:
+#         url_session = requests.Session()
+#         # User-Agent header to mimic a browser
+#         headers = {
+#             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+#         }
+#         # request with headers and session
+#         url_session.cookies.clear()
+#         response = url_session.get(url, headers=headers, timeout=10, allow_redirects=False)
+
+#         # retry 5 times with  
+#         for _ in range(3):
+#             time.sleep(_*2) # max wait 6s
+#             url_session.cookies.clear()
+#             response = url_session.get(url, headers=headers, timeout=10, allow_redirects=False)
+#             if 200 <= response.status_code < 300: 
+#                 return True 
+    
+#     except requests.RequestException as e:
+#         return False
+    
+# def is_generated_page(url):
+
+#     # criteria 1: query or search operator 
+#     def contains_query_optr(url): 
+#         parsed_url = urlparse(url)
+#         if len(parse_qs(parsed_url.query)) > 2: 
+#             return True
+#         if "search" in parsed_url.path or "query" in parsed_url.query:  
+#             return True
+    
+#     # criteria 2: link structure 
+#     def is_mostly_links(soup):
+#         # links outnumber paragraphs significantly, assume it's a generated page
+#         links = soup.find_all("a")
+#         paragraphs = soup.find_all("p")
+#         text_length = len(soup.get_text(strip=True))
+#         return len(links) > 5 * len(paragraphs) and text_length < 50
+
+#     # c1: url link inpsection 
+#     if contains_query_optr(url):  
+#         return True 
+    
+#     # c2-c3: bs4 related processing 
+#     try:
+#         response = requests.get(url, timeout=10)
+#         soup = BeautifulSoup(response.text, "html.parser")
+#     except requests.RequestException:
+#         return True
+#     if is_mostly_links(soup): 
+#         return True 
+#     return False
 
 def validate_date(date_str): 
     try:
@@ -275,11 +357,9 @@ def validate_entry():
         return jsonify({"error": "Please input a valid URL."}), 400
         
     # check if url accessible 
-    if not is_url_accessible(url): 
-        return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL."}), 400
-    # check if url not generated 
-    if is_generated_page(url): 
-        return jsonify({"error": f"Invalid submission: URL submitted is generated page / online files / search results, etc. Please refer to the Submission Must-Know FAQ. "}), 400
+    validate_url, msg = url_validator(url)
+    if not validate_url: 
+        return jsonify({"error": msg}), 400
 
     unix_time = str(int(timestamp.timestamp()))
 

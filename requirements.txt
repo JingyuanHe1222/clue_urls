@@ -7,3 +7,4 @@ requests
 dotenv
 bs4
 webdriver-manager
+selenium
