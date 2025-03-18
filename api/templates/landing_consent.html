@@ -48,7 +48,7 @@
                     const apiContainer = document.getElementById("apiContainer");
                     apiContainer.style.display = "block"; // Show the API key container
                     apiContainer.innerHTML = `<p>Here is your API key: <strong>${data.api_key}</strong></p>
-                                            <button onclick="copyApiKey('${data.api_key}')">Copy API Key</button>`;
+                                            <button onclick="copyApiKey('${data.api_key}')">Copy Key and Continue</button>`;
                 })
                 .catch(error => {
                     console.error("Error fetching API Key:", error);
@@ -58,7 +58,7 @@
             // Redirect after a delay of 10 s
             setTimeout(() => {
                 window.location.href = '/auth';
-            }, 10000);
+            }, 50000);
         });
 
         /* Copy API Key */
