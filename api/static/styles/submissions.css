@@ -149,6 +149,7 @@ button:disabled {
     display: none; 
     z-index: 1000;
     width: 60%;
+    text-align: left;
 }
 .faqBox p {
     line-height: 1.8; /* Increase this value to make lines further apart */
