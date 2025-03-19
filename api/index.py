@@ -109,17 +109,17 @@ headers = {
 
 def is_url_accessible(url):
     try:
-        url_session = requests.Session()
 
-        # request with headers and session
-        url_session.cookies.clear()
-        response = url_session.get(url, headers=headers, timeout=10, allow_redirects=False)
+        # url_session = requests.Session()
+        # # request with headers and session
+        # url_session.cookies.clear()
 
         # retry 5 times with  
         for _ in range(3):
             time.sleep(_*2) # max wait 6s
-            url_session.cookies.clear()
-            response = url_session.get(url, headers=headers, timeout=10, allow_redirects=False)
+            # url_session.cookies.clear()
+            # response = url_session.get(url, headers=headers, timeout=10, allow_redirects=False)
+            response = requests.get(url, headers=headers, timeout=10, allow_redirects=False)
             if 200 <= response.status_code < 300: 
                 return True 
     
