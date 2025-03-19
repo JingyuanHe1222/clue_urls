@@ -9,7 +9,7 @@
     <script>
 
         // Get number of entry per submission: default 10
-        var total_entry = 10; 
+        var total_entry = 15; 
 
         /* FAQ */
         function openFAQFormat() {
@@ -93,7 +93,7 @@
                 return; 
             }
 
-            let allValid = true;
+            let allValid = total_entry;
             let records = {};
             
             // check if each url entry is vaalid 
@@ -105,7 +105,7 @@
                 if (!urlInput || !timeInput) {
                     responseLine.style.display = "block";
                     responseLine.innerText = `Entry ${i+1}: Please enter both a URL and a timestamp.`;
-                    allValid = false; 
+                    allValid -= 1; 
                     continue;
                 }
                 
@@ -129,7 +129,7 @@
 
                     if (!validateResponse.ok) {
                         // Mark as invalid if the server responds with an error
-                        allValid = false;
+                        allValid -= 1;
                         responseLine.textContent = `Entry ${i+1}: ${validateResult.error}`;
                         responseLine.style.display = "block";
                     } else {
@@ -138,7 +138,7 @@
                         for (const j in records) {
                             // avoid duplicate urls in a single submission: urls can duplicate in different submission though
                             if (validateResult["url"] == records[j]["url"]) {
-                                allValid = false;
+                                allValid -= 1;
                                 responseLine.textContent = `Entry ${i+1}: Invalid submission: you have already entered this URL in this submission.`;
                                 responseLine.style.display = "block";
                                 new_record = false; 
@@ -154,14 +154,14 @@
                         }
                     }
                 } catch (error) {
-                    allValid = false;
+                    allValid -= 1;
                     responseLine.style.display = "block";
                     responseLine.textContent = `Error in entry ${i+1}: ${error.message}`;
                 }
             }
 
             // If not all entries are valid, stop processing
-            if (!allValid) {
+            if (allValid < total_entry*2/3) {
                 document.getElementById("response").style.display = "block";
                 document.getElementById("response").textContent = "Please correct the invalid entries before submitting.";
                 return;
@@ -274,11 +274,15 @@
             <strong>Please leave browser cookie records for this site unless you decline to participate in the study or decide to leave the study. </strong> <br>
             The browser cookie will record your worker id and a randomly assigned user id only to track the number of valid submissions you make for compensation approval.  
             </p>
+            <p> 
+                Some filters are applied to remove invalid pages you submit on the 15 URL entries you are filling. As long as 10 out of 15 pages are considered valid, your submission will pass to count as a successful submission eligible for compensation. 
+            </p>
+
         </div>
 
 
         <div class="header">
-            <h1>Submit a Browsing History Entry of 10 URLs</h1>
+            <h1>Submit a Browsing History Entry of 15 URLs</h1>
         </div>
 
         <!-- FAQ -->
