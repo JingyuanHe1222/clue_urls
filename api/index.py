@@ -107,22 +107,20 @@ headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
 }
 
+# Compile a regular expression pattern (case insensitive)
+url_keywords = ["sso", "signin", "login"]
+pattern = re.compile("|".join(url_keywords), re.IGNORECASE)
+
 def is_url_accessible(url):
     try:
-
-        # url_session = requests.Session()
-        # # request with headers and session
-        # url_session.cookies.clear()
-
-        # retry 5 times with  
-        for _ in range(3):
-            time.sleep(_*2) # max wait 6s
-            # url_session.cookies.clear()
-            # response = url_session.get(url, headers=headers, timeout=10, allow_redirects=False)
-            response = requests.get(url, headers=headers, timeout=10, allow_redirects=False)
-            if 200 <= response.status_code < 300: 
+        response = requests.get(url, headers=headers, allow_redirects=True)
+        # simple check for authentication upon redirection 
+        if response.url != url: 
+            if pattern.search(response.url):
+                return False
+            else:
                 return True 
-    
+        return 200 <= response.status_code < 300
     except requests.RequestException as e:
         return False
     

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consent Form</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/landing.css') }}" type="text/css">
+</head>
+
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ url_for('static', filename='images/cmu-scotty.png') }}" alt="CMU Logo">
+        </div>
+
+        <h1>Online Consent for Participation in Research</h1>
+        <p><strong>Study Title:</strong> Browsing URL Sequence Study</p>
+        <p><strong>Principal Investigator:</strong> Jingyuan He (jingyuah@cs.cmu.edu)</p>
+        <p><strong>Supervisor:</strong> Professor Chenyan Xiong (cx@cs.cmu.edu)</p>
+        <!-- <p>This study is funded by Meta Platforms, Inc.</p> -->
+        <form action="/submit-consent" method="post">
+
+            <h2>Consent</h2>
+
+            
+            <h2>Participant Requirements</h2>
+            <p>Are you 18 years or older and located in the U.S.?</p>
+            <label>
+                <input type="radio" name="age_location" value="yes" required>
+                Yes
+            </label>
+            <label>
+                <input type="radio" name="age_location" value="no">
+                No
+            </label>
+    
+            <h2>Procedures</h2>
+            <p>Can you commit to making up to 10 submissions with 10 URLs each from different days?</p>
+            <label>
+                <input type="radio" name="commitment" value="yes" required>
+                Yes
+            </label>
+            <label>
+                <input type="radio" name="commitment" value="no">
+                No
+            </label>
+    
+            <h2>Compensation</h2>
+            <p>You will be compensated $4 in total for 10 submissions or $0.4 per submission.</p>
+            
+            <h2>Risks and Confidentiality</h2>
+            <p>Please review the details about risks and confidentiality shared in the research description.</p>
+
+            <p>Do you consent to participate in this research study?</p>
+            <label>
+                <input type="radio" name="consent" value="yes" required>
+                Yes
+            </label>
+            <label>
+                <input type="radio" name="consent" value="no">
+                No
+            </label>
+            
+        </form>
+
+
+        <!-- <iframe src="{{ url_for('static', filename='files/cmu-irb-online-consent-prolific.docx.pdf') }}"></iframe> -->
+
+        
+        <h3>Worker ID: </h3>
+        <input type="text" id="workerID" placeholder="Enter your Worker ID">
+        <!--Consent Button-->
+        <div id="consentButtonContainer">
+            <button id="agreeButton">Agree</button>
+            <button id="declineButton">Decline</button>
+        </div>
+        <!--Display API Key-->
+        <div class="api-container" id="apiContainer">
+            <p>Here is your API key: <strong>1234-5678-API-KEY</strong></p>
+            <button onclick="copyApiKey()">Copy API Key</button>
+        </div>
+        
+        <div class="footer">
+            <p>CX_GROUP @ CMU LTI</p>
+        </div>
+    </div>
+
+
+    <script>
+
+        document.getElementById('agreeButton').addEventListener('click', function () {
+            const workerID = document.getElementById('workerID').value.trim();
+            if (!workerID) {
+                alert('Please enter your Worker ID before proceeding.');
+                return;
+            }
+
+            // Fetch the API key only after the Worker ID is entered and "Agree" is clicked
+            fetch('/get-api-key')
+                .then(response => response.json())
+                .then(data => {
+                    const apiContainer = document.getElementById("apiContainer");
+                    apiContainer.style.display = "block"; // Show the API key container
+                    apiContainer.innerHTML = `<p>Here is your API key: <strong>${data.api_key}</strong></p>
+                                            <button onclick="copyApiKey('${data.api_key}')">Copy Key and Continue</button>`;
+                })
+                .catch(error => {
+                    console.error("Error fetching API Key:", error);
+                    alert("Could not fetch the API key. Please try again later.");
+                });
+
+            // Redirect after a delay of 10 s
+            setTimeout(() => {
+                window.location.href = '/auth';
+            }, 50000);
+        });
+
+        /* Copy API Key */
+        function copyApiKey(apiKey) {
+
+            navigator.clipboard.writeText(apiKey).then(() => {
+            
+            alert('API Key copied to clipboard!');
+            
+            // Redirect after a successful copy
+            window.location.href = '/auth';
+            }).catch((error) => {
+                console.error("Error copying API Key:", error);
+                alert('Failed to copy the API Key. Please try again.');
+            });
+
+        }
+
+        document.getElementById('declineButton').addEventListener('click', function() {
+            const workerID = document.getElementById('workerID').value.trim();
+            if (!workerID) {
+                alert('Please enter your Worker ID before proceeding.');
+                return;
+            }
+            alert('You may now exit.');
+            window.close();
+        });
+
+    </script>
+</body>
+</html>
