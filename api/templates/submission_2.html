@@ -104,7 +104,7 @@
 
                 if (!urlInput || !timeInput) {
                     responseLine.style.display = "block";
-                    responseLine.innerText = "Please enter both a URL and a timestamp.";
+                    responseLine.innerText = `Entry ${i+1}: Please enter both a URL and a timestamp.`;
                     allValid = false; 
                     continue;
                 }
@@ -130,7 +130,7 @@
                     if (!validateResponse.ok) {
                         // Mark as invalid if the server responds with an error
                         allValid = false;
-                        responseLine.textContent = validateResult.error;
+                        responseLine.textContent = `Entry ${i+1}: ${validateResult.error}`;
                         responseLine.style.display = "block";
                     } else {
                         new_record = true; 
@@ -139,10 +139,10 @@
                             // avoid duplicate urls in a single submission: urls can duplicate in different submission though
                             if (validateResult["url"] == records[j]["url"]) {
                                 allValid = false;
-                                responseLine.textContent = "Invalid submission: you have already entered this URL in this submission.";
+                                responseLine.textContent = `Entry ${i+1}: Invalid submission: you have already entered this URL in this submission.`;
                                 responseLine.style.display = "block";
                                 new_record = false; 
-                                console.log(`Duplicate url-time pair in submission ${i}`); // ***
+                                console.log(`Duplicate url-time pair in submission ${i+1}`); // ***
                                 break; // no need to check if more duplicate with the above 
                             }
                         }
@@ -156,7 +156,7 @@
                 } catch (error) {
                     allValid = false;
                     responseLine.style.display = "block";
-                    responseLine.textContent = `Error in entry ${i + 1}: ${error.message}`;
+                    responseLine.textContent = `Error in entry ${i+1}: ${error.message}`;
                 }
             }
 
