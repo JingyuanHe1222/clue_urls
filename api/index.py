@@ -26,6 +26,7 @@ load_dotenv(dotenv_path=".env.local")
 VALID_API_KEYS = [os.getenv("API_KEY")]
 TABLE_NAME = os.getenv("TABLE_NAME")
 DATE_TABLE_NAME = os.getenv("DATE_TABLE_NAME")
+ID_TABLE_NAME = os.getenv("ID_TABLE_NAME")
 POSTGRES_URL = os.getenv("POSTGRES_URL")
 if POSTGRES_URL and POSTGRES_URL.startswith("postgres://"):
     POSTGRES_URL = POSTGRES_URL.replace("postgres://", "postgresql://", 1)
@@ -59,6 +60,13 @@ class DATEs(db.Model):
     user_id = db.Column(db.String(80), nullable=False)
     worker_id = db.Column(db.String(80), nullable=False)  # Add this line
     date = db.Column(db.String(80), nullable=False) 
+
+
+class IDs(db.Model):
+    __tablename__ = ID_TABLE_NAME
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.String(80), nullable=False)
+    worker_id = db.Column(db.String(80), nullable=False)  # Add this line
 
        
 # create model 
@@ -95,6 +103,7 @@ def landing_auth():
 def submission_page():
     if not session.get('authenticated'):
         return redirect(url_for('index'))  # Redirect to API key page if not authenticated
+    # once enter submission page, get user_id cookie 
     return render_template('submission_2.html')
 
 
@@ -213,12 +222,23 @@ def authenticate():
     if not worker_id:
         return jsonify({"error": "Worker ID is required!"}), 400
 
-    response = make_response(jsonify({"message": "Worker ID saved!"}))
-    response.set_cookie("worker_id", worker_id, max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
-
     if api_key in VALID_API_KEYS:
         session['authenticated'] = True  
-        response = make_response(jsonify({"message": "Authentication successful!"}))
+        response = make_response(jsonify({"message": "Authentication successful!"}))        
+        # setup uuid
+        exist_user = IDs.query.filter_by(worker_id=worker_id).first()
+        if exist_user: 
+            user_id = exist_user.user_id
+            print("existing user: ", exist_user.user_id) ### 
+        else: 
+            user_id = str(uuid.uuid4()) 
+            print("new user: ", user_id) ###
+            # store to ID map also 
+            uuid_map = IDs(user_id=user_id, worker_id=worker_id)
+            db.session.add(uuid_map)
+            db.session.commit()
+        # set cookies 
+        response.set_cookie("user_id", user_id, max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
         response.set_cookie("worker_id", worker_id, max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
         return response, 200
     else:
@@ -228,7 +248,7 @@ def authenticate():
 # check user submissions 
 @app.route('/submission_count', methods=['GET'])
 def get_submission_count():
-    user_id = request.cookies.get("user_id")
+    user_id = request.cookies.get("user_id", "")
     submission_count = int(request.cookies.get("submission_count", 0))
     return jsonify({"user_id": user_id, "submission_count": submission_count})
 
@@ -294,8 +314,8 @@ def validate_entry():
     worker_id = request.cookies.get("worker_id")
     # uid - persistent 
     user_id = request.cookies.get("user_id")
-    if not user_id:
-        user_id = str(uuid.uuid4())
+    # if not user_id:
+    #     user_id = str(uuid.uuid4())
 
     # if duplicate -> count as invalid
     existing_urls = URLs.query.filter_by(user_id=user_id, worker_id=worker_id, url=url, day_time=time_str).first()
@@ -376,7 +396,7 @@ def submit_text():
         "submission_count": submission_count
     }))
     
-    response.set_cookie("user_id", user_id, max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
+    # response.set_cookie("user_id", user_id, max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
     response.set_cookie("submission_count", str(submission_count), max_age=60*60*24*365, httponly=True, samesite="Lax")
 
     return response
