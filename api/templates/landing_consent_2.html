@@ -171,7 +171,8 @@
                     }
                     // Alert the error message from the server and exit 
                     alert( `You either do meet the study requirement or do not give consent to the study.\nThank you for your response. You may now close this window and exit the study. `);
-                    window.location.href = '/exit-page'; // works remotely 
+                    // window.location.href = '/exit-page'; // works remotely 
+                    window.close(); 
                     // throw new Error({"message": "Unsatisfied"}); 
                 })
                 .then(result => {
