@@ -171,8 +171,8 @@
                     }
                     // Alert the error message from the server and exit 
                     alert( `You either do meet the study requirement or do not give consent to the study.\nThank you for your response. You may now close this window and exit the study. `);
-                    window.location.href = '/exit-page';
-                    throw new Error({"message": "Unsatisfied"}); 
+                    window.location.href = '/exit-page'; // works remotely 
+                    // throw new Error({"message": "Unsatisfied"}); 
                 })
                 .then(result => {
                     console.log("result: ", result)
@@ -189,15 +189,8 @@
                                             
                 })
                 .catch(error => {
-                    console.log("err: ", error)
-                    if (error == "Unsatisfied") {
-                        console.error("Error during the process:", error);
-                        alert("Something went wrong. Please try again.");
-                        window.close(); 
-                    } else {
-                        console.error("Error during the process:", error);
-                        alert("Something went wrong. Please try again.");
-                    }
+                    console.error("Error during the process:", error);
+                    alert("Something went wrong. Please try again.");
                 });
                 // // Redirect after a delay of 100 s
                 // setTimeout(() => {
