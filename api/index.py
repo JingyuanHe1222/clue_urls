@@ -90,7 +90,7 @@ def index():
 # landing page for user consent  
 @app.route('/consent')
 def landing_consent():
-    return render_template('landing_consent.html')
+    return render_template('landing_consent_2.html')
 
 # landing page for API authentication 
 @app.route('/auth')
@@ -105,6 +105,13 @@ def submission_page():
         return redirect(url_for('index'))  # Redirect to API key page if not authenticated
     # once enter submission page, get user_id cookie 
     return render_template('submission_2.html')
+
+
+# Exit study 
+@app.route('/exit-page')
+def exit_page():
+    return render_template('exit_page.html')
+
 
 
 #############################################
@@ -202,14 +209,25 @@ def validate_timestamp(timestamp_str):
 @app.route('/get-api-key', methods=['GET'])
 def get_api_key():
     api_key = os.getenv("API_KEY")
+    session["api_key_generated"] = True
     return jsonify({"api_key": api_key})
 
 
-# Get number of entry per submission 
-@app.route('/get-num-entry', methods=['GET'])
-def get_num_entry():
-    num_entry = os.getenv("NUM_ENTRY")
-    return jsonify({"num_entry": num_entry})
+# Check the consent and study requirement 
+@app.route('/submit-consent', methods=['POST'])
+def submit_consent():
+    if request.form.get('age') != 'yes': 
+        return jsonify({"error": "You do not meet the age requirement of this study."}), 400
+    if request.form.get('loc_and_lang') != 'yes': 
+        return jsonify({"error": "You do not meet the location or language requirement of this study."}), 400
+    if request.form.get('policy') != 'yes':
+        return jsonify({"error": "You do not meet the policy requirement of this study."}), 400
+    if request.form.get('commitment') != 'yes': 
+        return jsonify({"error": "You do not commit to the study URL submission requirements."}), 400
+    if request.form.get('submission_policy') != 'yes': 
+        return jsonify({"error": "You do not commit to the study URL submission policy requirements."}), 400
+    response = make_response(jsonify({"message": "Form requirement met!"}))        
+    return response, 200
 
 
 # authenticate to reach submission forum 
@@ -243,6 +261,13 @@ def authenticate():
         return response, 200
     else:
         return jsonify({"error": "Invalid API key!"}), 401
+
+
+# Get number of entry per submission 
+@app.route('/get-num-entry', methods=['GET'])
+def get_num_entry():
+    num_entry = os.getenv("NUM_ENTRY")
+    return jsonify({"num_entry": num_entry})
 
 
 # check user submissions 

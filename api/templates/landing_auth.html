@@ -35,8 +35,8 @@
             <img src="{{ url_for('static', filename='images/cmu-scotty.png') }}" alt="CMU Logo" width="150" height="150">
             <h1>Enter API Key</h1>
         </div>
+        <input type="text" id="apiKey" placeholder="Paste your API key">
         <input type="text" id="workerId" placeholder="Enter your Worker ID" style="margin-top: 10px;">
-        <input type="text" id="apiKey" placeholder="Enter your API key">
         <button onclick="submitApiKey()">Submit</button>
         <p id="error"></p>
         <div class="footer">

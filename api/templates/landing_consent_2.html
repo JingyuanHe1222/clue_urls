@@ -4,39 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consent Form</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/landing.css') }}" type="text/css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/consent.css') }}" type="text/css">
 </head>
 
 
 <body>
     <div class="container">
+
         <div class="header">
             <img src="{{ url_for('static', filename='images/cmu-scotty.png') }}" alt="CMU Logo">
+            <h1>Online Consent for Participation in Research</h1>
+            <p><strong>Study Title:</strong> Browsing URL Sequence Study</p>
+            <p><strong>Principal Investigator:</strong> Jingyuan He (jingyuah@cs.cmu.edu)</p>
+            <p><strong>Supervisor:</strong> Professor Chenyan Xiong (cx@cs.cmu.edu)</p>
         </div>
 
-        <h1>Online Consent for Participation in Research</h1>
-        <p><strong>Study Title:</strong> Browsing URL Sequence Study</p>
-        <p><strong>Principal Investigator:</strong> Jingyuan He (jingyuah@cs.cmu.edu)</p>
-        <p><strong>Supervisor:</strong> Professor Chenyan Xiong (cx@cs.cmu.edu)</p>
         <!-- <p>This study is funded by Meta Platforms, Inc.</p> -->
         <form action="/submit-consent" method="post">
 
             <h2>Consent</h2>
-
             
-            <h2>Participant Requirements</h2>
-            <p>Are you 18 years or older and located in the U.S.?</p>
+            <h3>Participant Requirements</h3>
+
+            <!-- Age -->
+            <p>Are you 18 years or older?</p>
             <label>
-                <input type="radio" name="age_location" value="yes" required>
+                <input type="radio" name="age" value="yes" required>
                 Yes
             </label>
             <label>
-                <input type="radio" name="age_location" value="no">
+                <input type="radio" name="age" value="no">
                 No
             </label>
-    
-            <h2>Procedures</h2>
-            <p>Can you commit to making up to 10 submissions with 10 URLs each from different days?</p>
+
+            <!-- Location and Langauge -->
+            <p>Are you located in the U.S. and fluent in English to understand the study instructions?</p>
+            <label>
+                <input type="radio" name="loc_and_lang" value="yes" required>
+                Yes
+            </label>
+            <label>
+                <input type="radio" name="loc_and_lang" value="no">
+                No
+            </label>
+
+            <!-- Procedures -->
+            <h3>Procedures</h3>
+            <p>Can you commit to making up to 10 submissions of your browsing history from different days, each with more than 10 valid URLs? </p>
             <label>
                 <input type="radio" name="commitment" value="yes" required>
                 Yes
@@ -46,39 +60,81 @@
                 No
             </label>
     
-            <h2>Compensation</h2>
-            <p>You will be compensated $4 in total for 10 submissions or $0.4 per submission.</p>
-            
-            <h2>Risks and Confidentiality</h2>
-            <p>Please review the details about risks and confidentiality shared in the research description.</p>
-
-            <p>Do you consent to participate in this research study?</p>
+            <p>Do you agree to submit URLs in your browsing history that: <br> 
+                    1. True to your browsing history (URLs and their corresponding timestamp) <br> 
+                    2. Link to English webpages only  <br> 
+                    3. Contain no personal information  <br> 
+                    4. Link to a webpage that is not a generated page (example generated pages: Google search logs) <br> 
+                    5. Contain entertainment subjects (example page topics: shopping item, IMDb movies, sport news, etc) 
+            </p>
             <label>
-                <input type="radio" name="consent" value="yes" required>
+                <input type="radio" name="submission_policy" value="yes" required>
                 Yes
             </label>
             <label>
-                <input type="radio" name="consent" value="no">
+                <input type="radio" name="submission_policy" value="no">
                 No
             </label>
+    
+            <!-- Compensation -->
+            <h3>Compensation</h3>
+            <p>You will be compensated $4 in total for 10 submissions or $0.4 per submission of 10 valid URLs.
+            The compensation will be rewarded in U.S. dollars on the platform you enter and participate in this study from.</p>
             
+            <!-- Risks -->
+            <h3>Risks</h3>
+            <p> 
+                The risks and discomfort associated with participation in this study are no greater than those 
+                ordinarily encountered in daily life or during other online activities. <br> 
+                No identifiable private information will be collected. The collected URLs will be further processed to remove any identifiable private 
+                information such that only fully de-identified data will be used for study / possible release. <br> 
+                The Prolific.co./Amazon Mechanical Turk platform, the Vercel neon database, and the CMU virtual computation clusters might have access to the subject's identifiable data and be a possible source of a breach of confidentiality.
+                For full details, please review the Risks and Confidentiality section of the consent form attached below. 
+            </p>
+
+            <!-- Confidentiality -->
+            <h3> Confidentiality </h3>
+            <p> 
+                By participating in this research, you understand and agree that Carnegie Mellon may be required 
+                    to disclose your consent form, data and other personally identifiable information as required by 
+                    law, regulation, subpoena or court order. 
+                For full details, please review the Confidentiality section of the consent form attached below. 
+            </p>
+
+            <!-- Undestand policy -->
+            <p>I understand the procedure, risks, and compensation policy of the study. </p>
+            <label>
+                <input type="radio" name="policy" value="yes" required>
+                Yes
+            </label>
+            <label>
+                <input type="radio" name="policy" value="no">
+                No
+            </label>
+
+
+
+            <!-- <iframe src="{{ url_for('static', filename='files/cmu-irb-online-consent-prolific.docx.pdf') }}"></iframe> -->
+            
+            <p><strong> 
+                I certify that the above information is true to the best of my knowledge. I agree to give my consent to participate in this study. 
+            </strong></p>
+                    
+        
+            <!-- <h3>Worker ID: </h3> -->
+            <input type="text" id="workerID" placeholder="Enter your Worker ID">
+            <!--Consent Button-->
+             <div id="consentButtonContainer">
+                <button id="agreeButton" type="submit">Agree</button>
+                <button id="declineButton">Decline</button>
+            </div>
+
         </form>
 
-
-        <!-- <iframe src="{{ url_for('static', filename='files/cmu-irb-online-consent-prolific.docx.pdf') }}"></iframe> -->
-
-        
-        <h3>Worker ID: </h3>
-        <input type="text" id="workerID" placeholder="Enter your Worker ID">
-        <!--Consent Button-->
-        <div id="consentButtonContainer">
-            <button id="agreeButton">Agree</button>
-            <button id="declineButton">Decline</button>
-        </div>
         <!--Display API Key-->
         <div class="api-container" id="apiContainer">
-            <p>Here is your API key: <strong>1234-5678-API-KEY</strong></p>
-            <button onclick="copyApiKey()">Copy API Key</button>
+            <p>Here is your unique API key for authentication purpose: <strong>1234-5678-API-KEY</strong></p>
+            <button onclick="copyApiKey()">Copy API Key and Continue</button>
         </div>
         
         <div class="footer">
@@ -89,31 +145,64 @@
 
     <script>
 
-        document.getElementById('agreeButton').addEventListener('click', function () {
+        document.getElementById('agreeButton').addEventListener('click', function (event) {
+
+            event.preventDefault(); // no default rendering 
+
             const workerID = document.getElementById('workerID').value.trim();
             if (!workerID) {
                 alert('Please enter your Worker ID before proceeding.');
                 return;
             }
 
-            // Fetch the API key only after the Worker ID is entered and "Agree" is clicked
-            fetch('/get-api-key')
+            // Collect form data manually
+            const formData = new FormData(document.querySelector('form'));
+
+            // Send form data via fetch to the /submit-consent endpoint
+            fetch('/submit-consent', {
+                method: 'POST',
+                body: formData,
+            })
+                .then(response => {
+                    // If user doesn't meet study requirement or consent 
+                    if (response.ok) {
+                        // Parse JSON only if the response is successful
+                        return response.json(); 
+                    }
+                    // Alert the error message from the server and exit 
+                    alert( `You either do meet the study requirement or do not give consent to the study.\nThank you for your response. You may now close this window and exit the study. `);
+                    window.location.href = '/exit-page';
+                    throw new Error({"message": "Unsatisfied"}); 
+                })
+                .then(result => {
+                    console.log("result: ", result)
+                    console.log("result.error: ", result.error)
+                    // Fetch the API key only after successful form submission
+                    return fetch('/get-api-key');
+                })
                 .then(response => response.json())
                 .then(data => {
                     const apiContainer = document.getElementById("apiContainer");
                     apiContainer.style.display = "block"; // Show the API key container
                     apiContainer.innerHTML = `<p>Here is your API key: <strong>${data.api_key}</strong></p>
                                             <button onclick="copyApiKey('${data.api_key}')">Copy Key and Continue</button>`;
+                                            
                 })
                 .catch(error => {
-                    console.error("Error fetching API Key:", error);
-                    alert("Could not fetch the API key. Please try again later.");
+                    console.log("err: ", error)
+                    if (error == "Unsatisfied") {
+                        console.error("Error during the process:", error);
+                        alert("Something went wrong. Please try again.");
+                        window.close(); 
+                    } else {
+                        console.error("Error during the process:", error);
+                        alert("Something went wrong. Please try again.");
+                    }
                 });
-
-            // Redirect after a delay of 10 s
-            setTimeout(() => {
-                window.location.href = '/auth';
-            }, 50000);
+                // // Redirect after a delay of 100 s
+                // setTimeout(() => {
+                //     window.location.href = '/auth';
+                // }, 100000);
         });
 
         /* Copy API Key */
