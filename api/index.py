@@ -329,7 +329,7 @@ def validate_entry():
         
     # check if url accessible 
     if not is_url_accessible(url): 
-        return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL."}), 400
+        return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
     # check if url not generated 
     if is_generated_page(url): 
         return jsonify({"error": f"Invalid submission: URL submitted is generated page / online files / search results, etc. Please refer to the Submission Must-Know FAQ. "}), 400
