@@ -160,6 +160,8 @@
                 }
             }
 
+            console.log("validating number of eligible entries...");  // ***
+
             // If not all entries are valid, stop processing
             if (allValid < total_entry*2/3) {
                 document.getElementById("response").style.display = "block";
@@ -170,13 +172,18 @@
             // If all valid, submit all valid entries via POST request
             document.getElementById("response").innerText = "Submitting the records..."
 
+            console.log("trying to submit..."); // ***
+
             try {
+                const firstKey = Object.keys(records)[0];
                 let submissionDateResponse = await fetch("/submit_date", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({"user_id": records[0]["user_id"], "worker_id": records[0]["worker_id"], date: dateInput})
+                    body: JSON.stringify({"user_id": records[firstKey]["user_id"], "worker_id": records[firstKey]["worker_id"], date: dateInput})
                 });
+                console.log("submissionDateResponse: ", submissionDateResponse) // ***
                 let submissionDateResult = await submissionDateResponse.json();
+                console.log("submissionDateResult: ", submissionDateResult);  // ***
                 document.getElementById("response").textContent = submissionDateResult.message || submissionDateResult.error;
                 if (!submissionDateResponse.ok) {
                     document.getElementById("response").style.display = "block"
