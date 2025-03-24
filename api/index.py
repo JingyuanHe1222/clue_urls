@@ -129,7 +129,7 @@ pattern = re.compile("|".join(url_keywords), re.IGNORECASE)
 
 def is_url_accessible(url):
     try:
-        response = requests.get(url, headers=headers, allow_redirects=True)
+        response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
         # simple check for authentication upon redirection 
         if response.url != url: 
             if pattern.search(response.url):
