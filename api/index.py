@@ -324,12 +324,13 @@ def validate_entry():
     if not valid_time:
         # for invalid timestamp, str returned is error cause 
         return jsonify({"error": timestamp}), 400
+    # check if user input is a valid url 
     if not validators.url(url): 
         return jsonify({"error": "Please input a valid URL."}), 400
         
-    # check if url accessible 
-    if not is_url_accessible(url): 
-        return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
+    # # check if url accessible 
+    # if not is_url_accessible(url): 
+    #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
     # check if url not generated 
     if is_generated_page(url): 
         return jsonify({"error": f"Invalid submission: URL submitted is generated page / online files / search results, etc. Please refer to the Submission Must-Know FAQ. "}), 400
