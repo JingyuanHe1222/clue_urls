@@ -9,7 +9,8 @@
     <script>
 
         // Get number of entry per submission: default 10
-        var total_entry = 15; 
+        var total_entry = 20; 
+        var entry_threshold = 15; 
 
         /* FAQ */
         function openFAQFormat() {
@@ -163,7 +164,7 @@
             console.log("validating number of eligible entries...");  // ***
 
             // If not all entries are valid, stop processing
-            if (allValid < total_entry*2/3) {
+            if (allValid < entry_threshold) {
                 document.getElementById("response").style.display = "block";
                 document.getElementById("response").textContent = "Please correct the invalid entries before submitting.";
                 return;
@@ -267,7 +268,7 @@
         <div class="faqBox" id="contentFaq">
             <h3>Instructions for URL Submission:</h3>
             <p>
-            <strong>You will use the form in this page to submit 10 URLs from your browsing history at any date in the past year.</strong><br>
+            <strong>You will use the form in this page to submit URLs from your browsing history at any date within 1 year from the date of your submission.</strong><br>
             </p>
             <p>
             <span style="color: navy;"><strong></strong><strong>Please adhere to the following requirements: </strong></span><br>
@@ -285,14 +286,17 @@
             The browser cookie will record your worker id and a randomly assigned user id only to track the number of valid submissions you make for compensation approval.  
             </p>
             <p> 
-                Some filters are applied to remove invalid pages you submit on the 15 URL entries you are filling. As long as 10 out of 15 pages are considered valid, your submission will pass to count as a successful submission eligible for compensation. 
+                Some filters are applied to remove invalid pages you submit on the 20 URL entries you are filling. <br> 
+                <strong>
+                    As long as 15 out of 20 entries are considered valid, your submission will pass to count as a successful submission eligible for compensation. 
+                </strong>
             </p>
 
         </div>
 
 
         <div class="header">
-            <h1>Submit a Browsing History Entry of 15 URLs</h1>
+            <h1>Submit a Browsing History Entry of 15-20 URLs</h1>
         </div>
 
         <!-- FAQ -->
