@@ -140,6 +140,10 @@ def is_url_accessible(url):
     except requests.RequestException as e:
         return False
     
+def is_landing_page(url):
+    parsed = urlparse(url)
+    return parsed.path in ["", "/"]  # Exclude root pages
+    
 def is_generated_page(url):
 
     # criteria 1: query or search operator 
@@ -334,6 +338,10 @@ def validate_entry():
     # check if url not generated 
     if is_generated_page(url): 
         return jsonify({"error": f"Invalid submission: URL submitted is generated page / online files / search results, etc. Please refer to the Submission Must-Know FAQ. "}), 400
+
+    if is_landing_page(url): 
+        return jsonify({"error": f"Invalid submission: URL submitted is a landing page (e.g. https://www.reddit.com/). Please submit a page over specific item or content."}), 400
+
 
     unix_time = str(int(timestamp.timestamp()))
 
