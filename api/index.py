@@ -7,6 +7,7 @@ import requests
 import time 
 import uuid
 import validators
+from threading import Lock
 
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, parse_qs
@@ -14,6 +15,7 @@ from urllib.parse import urlparse, parse_qs
 from flask import Flask, session, request, jsonify, render_template, make_response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
+
 
 
 #############################################
@@ -42,6 +44,8 @@ app.secret_key = VALID_API_KEYS
 app.config["SQLALCHEMY_DATABASE_URI"] = POSTGRES_URL
 # init SQLAlchemy 
 db = SQLAlchemy(app)
+# lock to prevent access to the table at the same time
+lock = Lock()
 
 # data model 
 class URLs(db.Model):
@@ -298,7 +302,10 @@ def validate_date_entry():
     # check if the date is submitted by this user already 
     worker_id = request.cookies.get("worker_id")
     user_id = request.cookies.get("user_id")
-    existing_submission = DATEs.query.filter_by(user_id=user_id, worker_id=worker_id, date=date_str).first()
+
+    with lock: 
+        existing_submission = DATEs.query.filter_by(user_id=user_id, worker_id=worker_id, date=date_str).first()
+
     if existing_submission:
         return jsonify({"error": "Invalid submission: you have already submitted the browsing history for this date."}), 400
 
@@ -335,6 +342,7 @@ def validate_entry():
     # # check if url accessible 
     # if not is_url_accessible(url): 
     #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
+    
     # check if url not generated 
     if is_generated_page(url): 
         return jsonify({"error": f"Invalid submission: URL submitted is generated page / online files / search results, etc. Please refer to the Submission Must-Know FAQ. "}), 400
@@ -352,7 +360,8 @@ def validate_entry():
     #     user_id = str(uuid.uuid4())
 
     # if duplicate -> count as invalid
-    existing_urls = URLs.query.filter_by(user_id=user_id, worker_id=worker_id, url=url, day_time=time_str).first()
+    with lock: 
+        existing_urls = URLs.query.filter_by(user_id=user_id, worker_id=worker_id, url=url, day_time=time_str).first()
     if existing_urls:
         return jsonify({"error": "Invalid submission: you have already submitted this URL at the exact same time of another day."}), 400
 
@@ -384,8 +393,9 @@ def submit_date():
     
     # save 
     new_record = DATEs(user_id=user_id, worker_id=worker_id, date=date)
-    db.session.add(new_record)
-    db.session.commit()
+    with lock: 
+        db.session.add(new_record)
+        db.session.commit()
     response = make_response(jsonify({
         "message": "DATEs workload saved successfully!",
         "user_id": user_id,
@@ -417,8 +427,9 @@ def submit_text():
 
         # save 
         new_record = URLs(user_id=user_id, worker_id=worker_id, url=url, timestamp=unix_time, date=date, day_time=day_time)
-        db.session.add(new_record)
-        db.session.commit()
+        with lock: 
+            db.session.add(new_record)
+            db.session.commit()
 
     # update number of valid submission (no matter in domain or not)
     submission_count = int(request.cookies.get("submission_count", 0)) + 1
