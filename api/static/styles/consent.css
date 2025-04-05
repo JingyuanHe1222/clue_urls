@@ -38,6 +38,7 @@ body {
 
 .container form {
     text-align: left;
+    line-height: 1.6;
 }
 
 iframe {

@@ -150,8 +150,8 @@
                         if (new_record) {
                             // log results in case if all success
                             records[i] = validateResult; 
-                            responseLine.textContent = ""
-                            responseLine.style.display = "none";
+                            responseLine.textContent =  `Entry ${i+1}: Valid`
+                            responseLine.style.display = "block";
                         }
                     }
                 } catch (error) {
