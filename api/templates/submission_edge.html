@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browsing History Submission</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/submissions.css') }}" type="text/css">
+
+    <script>
+
+        // Get number of entry per submission: default 10
+        var total_entry = 15; 
+        var entry_threshold = 10; 
+
+        /* FAQ */
+        function openFAQFormat() {
+            document.getElementById('formatFaq').style.display = 'block';
+            document.getElementById('formatOverlay').style.display = 'block';
+        }
+        function closeFAQFormat() {
+            document.getElementById('formatFaq').style.display = 'none';
+            document.getElementById('formatOverlay').style.display = 'none';
+        }
+        function openFAQContent() {
+            document.getElementById('contentFaq').style.display = 'block';
+            document.getElementById('conentOverlay').style.display = 'block';
+        }
+        function closeFAQContext() {
+            document.getElementById('contentFaq').style.display = 'none';
+            document.getElementById('conentOverlay').style.display = 'none';
+        }
+
+        /* One Submission */ 
+        async function submitText() {
+
+            // update status
+            response = document.getElementById("response")
+            response.textContent = "Checking submission validity..."
+            response.style.display = "block";
+
+            // clear date validity status 
+            const responseDate = document.getElementById(`responseDate`);
+            responseDate.style.display = "none";
+
+            // check whether a date is entered and whether it is valid 
+            const dateInput = document.getElementById(`date`).value.trim();
+            if (!dateInput) {
+                responseDate.style.display = "block";
+                responseDate.innerText = "Please enter enter a valid date in format: MM/DD/YYYY";
+            } else {
+                responseDate.style.display = "none";
+                responseDate.innerText = "";
+            }
+
+            let validateDateResponse = await fetch("/validate_date", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ date: dateInput})
+            });
+            let validateDateResult = await validateDateResponse.json();
+            console.log("validateDateResult: ", validateDateResult) // *** 
+            if (!validateDateResponse.ok) {
+                responseDate.textContent = validateDateResult.error;
+                responseDate.style.display = "block";
+                document.getElementById("response").textContent = "Please correct the invalid entries before submitting.";
+                document.getElementById("response").style.display = "block"; 
+                return; 
+            }
+
+            let records = {};
+            
+            // check if each url entry is valid 
+            const urlInput = document.getElementById(`uploadInputs`).value.trim();
+
+            if (!urlInput) {
+                response.style.display = "block";
+                response.innerText = `Empty submission.`;
+                allValid -= 1; 
+                return;
+            }
+
+            // Validate each entry via GET /submit
+            try {
+
+                let validateResponse = await fetch("/validate_and_submit_edge", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ dateInput: dateInput, urlInput: urlInput})
+                });
+
+                let validateResult = await validateResponse.json();
+                
+                console.log("validationResult", validateResult);  // ***
+
+                if (!validateResponse.ok) {
+                    console.log("not okay... display error"); 
+                    // Mark as invalid if the server responds with an error
+                    response.textContent = `${validateResult.error}`;
+                    response.style.display = "block";
+                } else {
+                    // update status
+                    response.textContent = "Successfully submitted!";
+                    response.style.display = "block";
+                    // remove the text box
+                    document.getElementById(`uploadInputs`).value = "";
+                    document.getElementById(`date`).value = "";
+                }
+                
+            } catch (error) {
+                response.style.display = "block";
+                response.textContent = `${error.message}`;
+            }
+
+        }
+
+
+        // Fetch and display submission count on page load
+        async function fetchSubmissionCount() {
+            let response = await fetch("/submission_count");
+            let result = await response.json();
+            document.getElementById("submissionCount").innerText = `Valid Submissions: ${result.submission_count}`;
+        }
+
+        window.onload = fetchSubmissionCount;
+    </script>
+</head>
+<body>
+    
+    <div class="container">
+
+        <!-- Overlay FAQ content-->
+        <div class="overlay" id="formatOverlay" onclick="closeFAQFormat()">
+        </div>
+        <div class="faqBox" id="formatFaq">
+            <p>
+            <strong>Format for URL Sequence Submission:</strong><br>
+            You must enter a date following the format: MM/DD/YYYY. <br>
+            <br> 
+            The history file you exported from Edge should be a .csv file containing the columns: DateTime,NavigatedToUrl,PageTitle. The file looks like the image below.
+            <br>
+            <img src="{{ url_for('static', filename='images/history_example_look_edge.png') }}" alt="Example History.json" width="150" height="30">
+            <br> 
+            You can copy and paste lines in this file of the date you want to submit into the submission box. 
+            The URLs and date will be parsed automatically. 
+            <br> 
+            </p>
+        </div>
+
+        <div class="overlay" id="conentOverlay" onclick="closeFAQContext()"></div>
+        <div class="faqBox" id="contentFaq">
+            <h3>Instructions for URL Submission:</h3>
+            <p>
+            <strong>You will use the form in this page to submit URLs from your browsing history at any date within 1 year from the date of your submission.</strong><br>
+            </p>
+            <p>
+            <span style="color: navy;"><strong></strong><strong>Please adhere to the following requirements: </strong></span><br>
+            Please submit <strong><span style="color: cornflowerblue;">English </spa></strong> pages only <br>
+            Please submit URLs on <strong><span style="color: cornflowerblue;">entertainment subjects</span></strong> (e.g. Sports news, shopping items, IMDb movie intros)<br>
+            </p>
+            <p>
+            <span style="color: brown;"><strong>Please avoid submitting the following URLs: </strong></span><br>
+            1. URLs contain <span style="color: brown;"><strong>personal identifier</strong></span> or lead to webpages with personal information (e.g. https://someone.github.io/) <br>
+            2. URLs that contain your <span style="color: brown;"><strong>personal information</strong></span> as a query or need your <span style="color: brown;"><strong>credentials</strong></span> to login (e.g. https://wandb.ai/name) <br>
+            3. URLs to generated pages like search results (e.g. https://www.google.com/search?q=query), files, logs.<br>
+            </p>
+            <p> 
+            <strong>Please leave browser cookie records for this site unless you decline to participate in the study or decide to leave the study. </strong> <br>
+            The browser cookie will record your worker id and a randomly assigned user id only to track the number of valid submissions you make for compensation approval.  
+            </p>
+            <p> 
+                Some filters are applied to remove invalid pages you submit on the 15 URL entries you are filling. <br> 
+                <strong>
+                    As long as 10 out of 15 entries are considered valid, your submission will pass to count as a successful submission eligible for compensation. 
+                </strong>
+            </p>
+
+        </div>
+
+
+        <div class="header">
+            <h1>Make a Browsing History Submission of 15 URLs (>= 10 Satisfying Requirements) </h1>
+        </div>
+
+        <!-- FAQ -->
+        <div class="faq-buttons-container">
+            <button class="faqbutton" onclick="openFAQContent()">Submission Must-Know FAQ</button>
+            <button class="faqbutton" onclick="openFAQFormat()">Submission Format FAQ</button>
+        </div>
+
+        <div>
+            <h3> To export Edge browsing history, you can follow the instruction <a target="_blank" href="https://www.elevenforum.com/t/export-browsing-history-to-csv-file-in-microsoft-edge.17831/"> here </a></h2> 
+            <h4> The exported history should adhere to this format: ISO time, URL, page title. As indicated by the two example below. </h4>
+            <span class="example-input">
+                2025-04-03T18:23:14.075Z,https://www.imdb.com/title/tt8999762/?ref_=hm_fanfav_t_5_pd_fp1_r,The Brutalist (2024) - IMDb
+                <br> 
+                2025-04-03T18:23:21.778Z,https://www.youtube.com/watch?v=bf1264iFr-w&list=PL06960BA52D0DB32B,Lecture 1 | Introduction to Linear Dynamical Systems - YouTube
+            </span>
+            <br> 
+        </div>
+
+        <!-- Submission Form -->
+        <form>
+            <!-- Date -->
+            <label for="date" class="date-label"><b>Enter the date which you visited the following URLs here: </b></label>
+            <input type="text" id="date" placeholder="MM/DD/YYYY" required>
+            <p id="responseDate" class="response-line" style="color: red; display: none;"></p>
+            <label for="uploadInputs"></label>
+            <div class="input-container"> 
+                <textarea id="uploadInputs" placeholder="Paste your browsing history from the exported file here..." required></textarea>
+            </div>
+        </form>
+
+        <button onclick="submitText()">Submit</button>
+
+        <!-- submission info specifics -->
+        <p id="response"></p>
+        <p id="submissionCount">Valid Submissions: 0</p>
+
+        <!-- footer -->
+        <div class="footer">
+            <p> CX_GROUP @ CMU LTI</p>
+        </div>
+
+    </div>
+
+</body>
+</html>

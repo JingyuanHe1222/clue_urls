@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browsing History Submission</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/submissions.css') }}" type="text/css">
+
+    <script>
+
+        /* FAQ */
+
+        function openFAQContent() {
+            document.getElementById('contentFaq').style.display = 'block';
+            document.getElementById('conentOverlay').style.display = 'block';
+        }
+        function closeFAQContext() {
+            document.getElementById('contentFaq').style.display = 'none';
+            document.getElementById('conentOverlay').style.display = 'none';
+        }
+
+        // jump to the next page 
+        async function edge_option() {
+            window.location.href = '/edge_submission';
+        }
+        async function chrome_option() {
+            window.location.href = '/chrome_submission';
+        }
+        async function manual_option() {
+            window.location.href = '/manual_submission';
+        }
+
+        
+    </script>
+</head>
+<body>
+    
+    <div class="container">
+
+        <!-- Overlay FAQ content-->
+        <div class="overlay" id="formatOverlay" onclick="closeFAQFormat()">
+        </div>
+        <div class="faqBox" id="formatFaq">
+            <p>
+            <strong>Format for URL Sequence Submission:</strong><br>
+            1. The URL should be a valid, full web address (e.g., https://example.com).<br>
+            2. The date must follow the format: MM/DD/YYYY. <br>
+            3. The timestamp must follow the format: hh:mm. <br>
+            4. Ensure all fields are filled before submission. <br> 
+            <strong>Tips:</strong><br>
+            You can press submit to check if the entries you filled are considered valid even if you don't have all entry fields filled. 
+            <br> 
+            </p>
+        </div>
+
+        <div class="overlay" id="conentOverlay" onclick="closeFAQContext()"></div>
+        <div class="faqBox" id="contentFaq">
+            <h3>Instructions for URL Submission:</h3>
+            <p>
+            <strong>You will use the form in this page to submit URLs from your browsing history at any date within 1 year from the date of your submission.</strong><br>
+            </p>
+            <p>
+            <span style="color: navy;"><strong></strong><strong>Please adhere to the following requirements: </strong></span><br>
+            Please submit <strong><span style="color: cornflowerblue;">English </spa></strong> pages only <br>
+            Please submit URLs on <strong><span style="color: cornflowerblue;">entertainment subjects</span></strong> (e.g. Sports news, shopping items, IMDb movie intros)<br>
+            </p>
+            <p>
+            <span style="color: brown;"><strong>Please avoid submitting the following URLs: </strong></span><br>
+            1. URLs contain <span style="color: brown;"><strong>personal identifier</strong></span> or lead to webpages with personal information (e.g. https://someone.github.io/) <br>
+            2. URLs that contain your <span style="color: brown;"><strong>personal information</strong></span> as a query or need your <span style="color: brown;"><strong>credentials</strong></span> to login (e.g. https://wandb.ai/name) <br>
+            3. URLs to generated pages like search results (e.g. https://www.google.com/search?q=query), files, logs.<br>
+            </p>
+            <p> 
+            <strong>Please leave browser cookie records for this site unless you decline to participate in the study or decide to leave the study. </strong> <br>
+            The browser cookie will record your worker id and a randomly assigned user id only to track the number of valid submissions you make for compensation approval.  
+            </p>
+            <p> 
+                Some filters are applied to remove invalid pages you submit on the 15 URL entries you are filling. <br> 
+                <strong>
+                    As long as 10 out of 15 entries are considered valid, your submission will pass to count as a successful submission eligible for compensation. 
+                </strong>
+            </p>
+
+        </div>
+
+
+        <div class="header">
+            <h1>Make a Browsing History Submission of 15 URLs (>= 10 Satisfying Requirements) </h1>
+        </div>
+
+        <!-- FAQ -->
+        <div class="faq-buttons-container">
+            <button class="faqbutton" onclick="openFAQContent()">Submission Must-Know FAQ</button>
+        </div>
+
+
+        <h3> 
+            To submit your browsing history, you can export your browsing history from Edge/Chrome with the exact format we request, or you can manually enter each URL and their visited timestamp. 
+        </h3>
+
+        <h4> 
+            Export browsing history will be faster, and you are allow to copy and paste as many URL record as you want. 
+            <br> 
+            However, you have to make sure the browsing history you paste is of the exact format we request.  
+            <br> 
+            If you choose to enter URL manually, you will get more detailed diagnosis information if the submission is rejected. 
+        </h4>
+
+        <!-- Different button and format -->
+        <div class="faq-buttons-container">
+        <button onclick="edge_option()">Export and Submit Edge History</button>
+        <br> 
+        <button onclick="chrome_option()">Export and Submit Chrome History</button>
+        <br> 
+        <button onclick="manual_option()">Manually enter the URL and timestamp entries</button>
+        <br> 
+        </div>
+
+
+        <!-- footer -->
+        <div class="footer">
+            <p> CX_GROUP @ CMU LTI</p>
+        </div>
+
+    </div>
+
+</body>
+</html>

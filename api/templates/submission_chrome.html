@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browsing History Submission</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/submissions.css') }}" type="text/css">
+
+    <script>
+
+        // Get number of entry per submission: default 10
+        var total_entry = 15; 
+        var entry_threshold = 10; 
+
+        /* FAQ */
+        function openFAQFormat() {
+            document.getElementById('formatFaq').style.display = 'block';
+            document.getElementById('formatOverlay').style.display = 'block';
+        }
+        function closeFAQFormat() {
+            document.getElementById('formatFaq').style.display = 'none';
+            document.getElementById('formatOverlay').style.display = 'none';
+        }
+        function openFAQContent() {
+            document.getElementById('contentFaq').style.display = 'block';
+            document.getElementById('conentOverlay').style.display = 'block';
+        }
+        function closeFAQContext() {
+            document.getElementById('contentFaq').style.display = 'none';
+            document.getElementById('conentOverlay').style.display = 'none';
+        }
+
+        /* One Submission */ 
+        async function submitText() {
+
+            // update status
+            response = document.getElementById("response")
+            response.textContent = "Checking submission validity..."
+            response.style.display = "block";
+
+            let records = {};
+            
+            // check if each url entry is valid 
+            const urlInput = document.getElementById(`uploadInputs`).value.trim();
+
+            if (!urlInput) {
+                response.style.display = "block";
+                response.innerText = `Empty submission.`;
+                allValid -= 1; 
+                return;
+            }
+
+            // Validate each entry via GET /submit
+            try {
+
+                let validateResponse = await fetch("/validate_and_submit_chrome", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ urlInput: urlInput})
+                });
+
+                let validateResult = await validateResponse.json();
+                
+                console.log("validationResult", validateResult);  // ***
+
+                if (!validateResponse.ok) {
+                    console.log("not okay... display error"); 
+                    // Mark as invalid if the server responds with an error
+                    response.textContent = `${validateResult.error}`;
+                    response.style.display = "block";
+                } else {
+                    // update status
+                    response.textContent = "Successfully submitted!";
+                    response.style.display = "block";
+                    // remove the text box
+                    document.getElementById(`uploadInputs`).value = "";
+                }
+                
+            } catch (error) {
+                response.style.display = "block";
+                response.textContent = `${error.message}`;
+            }
+
+        }
+
+
+        // Fetch and display submission count on page load
+        async function fetchSubmissionCount() {
+            let response = await fetch("/submission_count");
+            let result = await response.json();
+            document.getElementById("submissionCount").innerText = `Valid Submissions: ${result.submission_count}`;
+        }
+
+        window.onload = fetchSubmissionCount;
+    </script>
+</head>
+<body>
+    
+    <div class="container">
+
+        <!-- Overlay FAQ content-->
+        <div class="overlay" id="formatOverlay" onclick="closeFAQFormat()">
+        </div>
+        <div class="faqBox" id="formatFaq">
+            <p>
+            <strong>Format for URL Sequence Submission:</strong><br>
+            Your History.json file should looks like the image below. 
+            <img src="{{ url_for('static', filename='images/history_example_look.png') }}" alt="Example History.json" width="150" height="150">
+            <br> 
+            Each browsing history is an item inside the list (which is the pink square bracket) under "Browser History". 
+            <br> 
+            Each browsing history item is wrapped by open and closing curly bracket.
+            <br>
+            You can copy a paste a buunch of these browsing history items, separated by a comma (",").  
+            <br>
+            Our application will automatically parse the input and check for possible valid submissions.  
+            </p>
+        </div>
+
+        <div class="overlay" id="conentOverlay" onclick="closeFAQContext()"></div>
+        <div class="faqBox" id="contentFaq">
+            <h3>Instructions for URL Submission:</h3>
+            <p>
+            <strong>You will use the form in this page to submit URLs from your browsing history at any date within 1 year from the date of your submission.</strong><br>
+            </p>
+            <p>
+            <span style="color: navy;"><strong></strong><strong>Please adhere to the following requirements: </strong></span><br>
+            Please submit <strong><span style="color: cornflowerblue;">English </spa></strong> pages only <br>
+            Please submit URLs on <strong><span style="color: cornflowerblue;">entertainment subjects</span></strong> (e.g. Sports news, shopping items, IMDb movie intros)<br>
+            </p>
+            <p>
+            <span style="color: brown;"><strong>Please avoid submitting the following URLs: </strong></span><br>
+            1. URLs contain <span style="color: brown;"><strong>personal identifier</strong></span> or lead to webpages with personal information (e.g. https://someone.github.io/) <br>
+            2. URLs that contain your <span style="color: brown;"><strong>personal information</strong></span> as a query or need your <span style="color: brown;"><strong>credentials</strong></span> to login (e.g. https://wandb.ai/name) <br>
+            3. URLs to generated pages like search results (e.g. https://www.google.com/search?q=query), files, logs.<br>
+            </p>
+            <p> 
+            <strong>Please leave browser cookie records for this site unless you decline to participate in the study or decide to leave the study. </strong> <br>
+            The browser cookie will record your worker id and a randomly assigned user id only to track the number of valid submissions you make for compensation approval.  
+            </p>
+            <p> 
+                Some filters are applied to remove invalid pages you submit on the 15 URL entries you are filling. <br> 
+                <strong>
+                    As long as 10 out of 15 entries are considered valid, your submission will pass to count as a successful submission eligible for compensation. 
+                </strong>
+            </p>
+
+        </div>
+
+
+        <div class="header">
+            <h1>Make a Browsing History Submission of 15 URLs (>= 10 Satisfying Requirements) </h1>
+        </div>
+
+        <!-- FAQ -->
+        <div class="faq-buttons-container">
+            <button class="faqbutton" onclick="openFAQContent()">Submission Must-Know FAQ</button>
+            <button class="faqbutton" onclick="openFAQFormat()">Submission Format FAQ</button>
+        </div>
+
+        <div>
+            <h2> To export Edge browsing history, you can follow the instruction <a target="_blank" href="https://support.google.com/accounts/answer/3024190?sjid=13449417171003339767-NA"> here </a></h2> 
+            <h4> The exported history should contains a History.json file</h4> 
+            <h4> Within this file, you can find browsing history contains within the curly bracket under the "Browser History" list.</h4>
+            <h4> You can select 10 histories to copy and paste into our submission box, with a format indicated by the example below. </h4>
+            <span class="example-input">
+                {
+                    <br>&#9;     "favicon_url": "https://www.cmu.edu/favicon.ico",
+                    <br>&#9;     "page_transition_qualifier": "CLIENT_REDIRECT",
+                    <br>&#9;     "title": "Homepage - CMU - Carnegie Mellon University",
+                    <br>&#9;     "url": "https://www.cmu.edu/",
+                    <br>&#9;     "time_usec": 1740447036304943,
+                    <br>&#9;     "client_id": "GhgsfiRBtVVaLJgT3sQElg=="
+                    <br> },
+                <br> 
+                {
+                    <br>&#9;    "favicon_url": "https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-Favicons/original/0d189acb-3f82-4b2c-b95f-ad1d6a803d13.png?im_w=240",
+                    <br>&#9;    "page_transition_qualifier": "CLIENT_REDIRECT",
+                    <br>&#9;    "title": "Airbnb | Vacation rentals, cabins, beach houses, & more",
+                    <br>&#9;    "url": "https://www.airbnb.com/?c=.pi0.pk36239956_25650614176&&c=.pi0.pk36239956_25650614176&ghost=true&gad_source=1&gclid=Cj0KCQiAq-u9BhCjARIsANLj-s3oilYWv54ssHG28X-k5gGj9ItQiK2i5V8F74yeaUa0u0LU3Qg1UAQaAsNzEALw_wcB&gclsrc=aw.ds",
+                    <br>&#9;    "time_usec": 1740339118056162,
+                    <br>&#9;    "client_id": "GhgsfiRBtVVaLJgT3sQElg=="
+                    <br>},
+            </span>
+            <br> 
+        </div>
+
+        <!-- Submission Form -->
+        <form>
+            <label for="uploadInputs"></label>
+            <div class="input-container"> 
+                <textarea id="uploadInputs" placeholder="Paste your browsing history from the exported file here..." required></textarea>
+            </div>
+        </form>
+
+        <button onclick="submitText()">Submit</button>
+
+        <!-- submission info specifics -->
+        <p id="response"></p>
+        <p id="submissionCount">Valid Submissions: 0</p>
+
+        <!-- footer -->
+        <div class="footer">
+            <p> CX_GROUP @ CMU LTI</p>
+        </div>
+
+    </div>
+
+</body>
+</html>

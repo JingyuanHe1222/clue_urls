@@ -1,10 +1,12 @@
 
-from datetime import datetime, timedelta
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 import os 
 import re
 import requests
 import time 
+import json 
 import uuid
 import validators
 from threading import Lock
@@ -102,9 +104,30 @@ def landing_auth():
     # This function renders the HTML template dynamically
     return render_template('landing_auth.html')
 
-# url submission page 
+# url submission pages
 @app.route('/submission')
 def submission_page():
+    if not session.get('authenticated'):
+        return redirect(url_for('index'))  # Redirect to API key page if not authenticated
+    # once enter submission page, get user_id cookie 
+    return render_template('submission.html')
+
+@app.route('/edge_submission')
+def edge_submission_page():
+    if not session.get('authenticated'):
+        return redirect(url_for('index'))  # Redirect to API key page if not authenticated
+    # once enter submission page, get user_id cookie 
+    return render_template('submission_edge.html')
+
+@app.route('/chrome_submission')
+def chrome_submission_page():
+    if not session.get('authenticated'):
+        return redirect(url_for('index'))  # Redirect to API key page if not authenticated
+    # once enter submission page, get user_id cookie 
+    return render_template('submission_chrome.html')
+
+@app.route('/manual_submission')
+def manual_submission_page():
     if not session.get('authenticated'):
         return redirect(url_for('index'))  # Redirect to API key page if not authenticated
     # once enter submission page, get user_id cookie 
@@ -187,6 +210,7 @@ def is_generated_page(url):
         return True 
     return False
 
+
 def validate_date(date_str): 
     try:
         # Parse the date using the specified format
@@ -200,7 +224,8 @@ def validate_date(date_str):
             return "Invalid date. Date submitted is either too old (older than 1 year) or is invalid (future time)", False
     except ValueError:
         return "Invalid date. Please format date input as MM/DD/YYYY", False
-    
+
+
 def validate_timestamp(timestamp_str): 
     try:
         # Parse the timestamp using the specified format
@@ -208,6 +233,31 @@ def validate_timestamp(timestamp_str):
         return timestamp, True 
     except ValueError:
         return "Invalid timestamp format. Use hh:mm. (24 hours format)", False
+    
+def validate_iso_timestamp(timestamp_str, date): 
+    try: 
+        dt = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+        # not the same date as above 
+        if dt.date() != datetime.strptime(date, "%m/%d/%Y").date(): 
+            return None, None, 2
+        unix_time = str(int(dt.timestamp()))
+        time_str = dt.strftime("%H:%M")
+        return unix_time, time_str, 1
+    except: 
+        return None, None, 0
+    
+
+def validate_unix_timestamp(timestamp): 
+    try: 
+        ts = datetime.fromtimestamp(timestamp)
+        time_str = ts.strftime("%H:%M")
+        return timestamp, ts.date(), time_str, 1
+    except: 
+        return None, None, None, 0
+    
+
+
+
 
 #############################################
 ############# Backend Methods ###############
@@ -445,6 +495,227 @@ def submit_text():
     response.set_cookie("submission_count", str(submission_count), max_age=60*60*24*365, httponly=True, samesite="Lax")
 
     return response
+
+
+@app.route('/validate_and_submit_edge', methods=['POST'])
+def validate_and_submit_edge(): 
+    if not session.get('authenticated'):
+        return jsonify({"error": "Unauthorized access!"}), 403
+
+    data = request.json
+    url = data.get("urlInput", "").strip()
+    date_str = data.get("dateInput", "").strip()
+    
+    valid_urls = []
+    url_lines = url.split("\n")
+
+    if len(url_lines) == 0: 
+        return jsonify({"error": "No input. "}), 400
+
+    for url_line in url_lines: 
+
+        try: 
+            parts = url_line.strip().split(",")
+            timestamp_str = parts[0].strip()
+            url = parts[1].strip()
+        except IndexError: 
+            return jsonify({"error": "Your input does not follow the format requirement."}), 400
+
+        # check validity of the URL
+        if not url or not validators.url(url): 
+            continue 
+        # heck validity of time stamp 
+        if not timestamp_str:
+            continue 
+        unix_time, day_time, valid_time = validate_iso_timestamp(timestamp_str, date_str)
+        if not valid_time: 
+            continue 
+        elif valid_time == 2: 
+            return jsonify({"error": "Make sure the browsing history you submit has the same date as the input date on top."}), 400
+            
+        # # check if url accessible 
+        # if not is_url_accessible(url): 
+        #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
+        
+        # check if url not generated 
+        if is_generated_page(url): 
+            continue 
+
+        if is_landing_page(url): 
+            continue 
+
+        # add to valid url list
+        valid_urls.append((url, day_time, unix_time))
+
+    # if long enough to submit
+    if len(valid_urls) < 10: 
+        return jsonify({"error": f"Only {len(valid_urls)} URLs are valid. Please add more browsing records of the same day."}), 400
+
+    # uid - persistent 
+    worker_id = request.cookies.get("worker_id")
+    user_id = request.cookies.get("user_id")
+    
+    # submit date
+    new_record = DATEs(user_id=user_id, worker_id=worker_id, date=date_str)
+    with lock: 
+        db.session.add(new_record)
+        db.session.commit()
+
+    # submit urls 
+    for url_pair in valid_urls: 
+        url, day_time, unix_time = url_pair
+        new_record = URLs(user_id=user_id, worker_id=worker_id, url=url, timestamp=unix_time, date=date_str, day_time=day_time)
+        with lock: 
+            db.session.add(new_record)
+            db.session.commit()
+
+    print(f"Successfully submitted {len(valid_urls)} urls...")
+
+    
+    # update number of valid submission (no matter in domain or not)
+    submission_count = int(request.cookies.get("submission_count", 0)) + 1
+
+    response = make_response(jsonify({
+        "message": "URL saved successfully!",
+        "user_id": user_id,
+        "worker_id": worker_id,
+        "submission_count": submission_count
+    }))
+    
+    # response.set_cookie("user_id", user_id, max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
+    response.set_cookie("submission_count", str(submission_count), max_age=60*60*24*365, httponly=True, samesite="Lax")
+
+    return response
+
+
+
+
+@app.route('/validate_and_submit_chrome', methods=['POST'])
+def validate_and_submit_chrome(): 
+    if not session.get('authenticated'):
+        return jsonify({"error": "Unauthorized access!"}), 403
+
+    data = request.json
+    url = data.get("urlInput", "").strip()
+    
+    valid_urls = defaultdict(list)
+
+    try: 
+        url = "[" + url.strip().rstrip(",") + "]"
+        url_lines = json.loads(url)
+    except: 
+        return jsonify({"error": "Your input does not follow the format requirement."}), 400
+
+    if len(url_lines) == 0: 
+        return jsonify({"error": "No input. "}), 400
+
+    for url_dict in url_lines: 
+
+        try: 
+            url = url_dict["url"]
+            timestamp_str = url_dict["time_usec"]
+            timestamp = int(timestamp_str) // 1_000_000
+        except IndexError: 
+            return jsonify({"error": "Your input does not follow the format requirement."}), 400
+
+        # check validity of the URL
+        if not url or not validators.url(url): 
+            continue 
+        # heck validity of time stamp 
+        if not timestamp:
+            continue 
+        unix_time, date, day_time, valid_time = validate_unix_timestamp(timestamp)
+        if not valid_time: 
+            continue 
+
+        # # check if url accessible 
+        # if not is_url_accessible(url): 
+        #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
+        
+        # check if url not generated 
+        if is_generated_page(url): 
+            continue 
+
+        if is_landing_page(url): 
+            continue 
+
+        # add to valid url list
+        valid_urls[date].append((url, day_time, unix_time))
+
+    # uid - persistent 
+    worker_id = request.cookies.get("worker_id")
+    user_id = request.cookies.get("user_id")
+
+    # for each date submitted 
+    success_submissions = 0
+    over_time = []
+    already_submitted = []
+    less_than = []
+    for date in valid_urls: 
+
+        date_str = date.strftime("%m/%d/%Y")
+        # if date is not within expected time or sequences is too short: abandon 
+        if not validate_date(date_str): 
+            over_time.append(date_str)
+            continue 
+        if len(valid_urls[date]) < 10: 
+            less_than.append(date_str)
+            continue 
+            
+        # check if date has been submitted previously 
+        with lock: 
+            existing_submission = DATEs.query.filter_by(user_id=user_id, worker_id=worker_id, date=date_str).first()
+        if existing_submission:
+            already_submitted.append(date_str)
+            continue 
+
+        # submit date
+        new_record = DATEs(user_id=user_id, worker_id=worker_id, date=date_str)
+        with lock: 
+            db.session.add(new_record)
+            db.session.commit()
+
+        # submit urls of this date 
+        for url_pair in valid_urls[date]: 
+            url, day_time, unix_time = url_pair
+            new_record = URLs(user_id=user_id, worker_id=worker_id, url=url, timestamp=unix_time, date=date_str, day_time=day_time)
+            with lock: 
+                db.session.add(new_record)
+                db.session.commit()
+
+        success_submissions += 1
+        print(f"Successfully submitted {len(valid_urls)} urls on date {date}...")
+
+    if success_submissions < 1: 
+        # structure error msg 
+        error_msg = ""
+        if len(over_time) > 0: 
+            over_time = ",".join(over_time)
+            error_msg = f"Dates of invalid timeframe: {over_time}; "
+        if len(already_submitted) > 0: 
+            already_submitted = ",".join(already_submitted)
+            error_msg += f"Dates already submitted: {already_submitted}; "
+        if len(less_than) > 0: 
+            less_than = ",".join(less_than)
+            error_msg += f"Dates whose URLs sequences less than 10: {less_than}; "
+
+        return jsonify({"error": f"No successful submissions are made. {error_msg} "}), 400
+    
+    # update number of valid submission (no matter in domain or not)
+    submission_count = int(request.cookies.get("submission_count", 0)) + 1
+
+    response = make_response(jsonify({
+        "message": "URL saved successfully!",
+        "user_id": user_id,
+        "worker_id": worker_id,
+        "submission_count": submission_count
+    }))
+    
+    # response.set_cookie("user_id", user_id, max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
+    response.set_cookie("submission_count", str(submission_count), max_age=60*60*24*365, httponly=True, samesite="Lax")
+
+    return response
+
 
 
 if __name__ == '__main__':
