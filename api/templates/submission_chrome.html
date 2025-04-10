@@ -105,13 +105,14 @@
             <p>
             <strong>Format for URL Sequence Submission:</strong><br>
             Your History.json file should looks like the image below. 
-            <img src="{{ url_for('static', filename='images/history_example_look.png') }}" alt="Example History.json" width="150" height="150">
+            <br>
+            <img src="{{ url_for('static', filename='images/history_example_look.png') }}" alt="Example History.json" width="530" height="350">
             <br> 
             Each browsing history is an item inside the list (which is the pink square bracket) under "Browser History". 
             <br> 
             Each browsing history item is wrapped by open and closing curly bracket.
             <br>
-            You can copy a paste a buunch of these browsing history items, separated by a comma (",").  
+            You can copy and paste many of these browsing history items into the submission box below, separated by a comma (",").  
             <br>
             Our application will automatically parse the input and check for possible valid submissions.  
             </p>
@@ -133,6 +134,7 @@
             1. URLs contain <span style="color: brown;"><strong>personal identifier</strong></span> or lead to webpages with personal information (e.g. https://someone.github.io/) <br>
             2. URLs that contain your <span style="color: brown;"><strong>personal information</strong></span> as a query or need your <span style="color: brown;"><strong>credentials</strong></span> to login (e.g. https://wandb.ai/name) <br>
             3. URLs to generated pages like search results (e.g. https://www.google.com/search?q=query), files, logs.<br>
+            4. Duplicated URLs of the same timestamp are considered invalid. <br>
             </p>
             <p> 
             <strong>Please leave browser cookie records for this site unless you decline to participate in the study or decide to leave the study. </strong> <br>
@@ -141,7 +143,7 @@
             <p> 
                 Some filters are applied to remove invalid pages you submit on the 15 URL entries you are filling. <br> 
                 <strong>
-                    As long as 10 out of 15 entries are considered valid, your submission will pass to count as a successful submission eligible for compensation. 
+                    As long as 10 URLs and their timestamps are considered valid, your submission will pass to count as a successful submission eligible for compensation. 
                 </strong>
             </p>
 
@@ -162,7 +164,7 @@
             <h2> To export Edge browsing history, you can follow the instruction <a target="_blank" href="https://support.google.com/accounts/answer/3024190?sjid=13449417171003339767-NA"> here </a></h2> 
             <h4> The exported history should contains a History.json file</h4> 
             <h4> Within this file, you can find browsing history contains within the curly bracket under the "Browser History" list.</h4>
-            <h4> You can select 10 histories to copy and paste into our submission box, with a format indicated by the example below. </h4>
+            <h4> You can select many histories to copy and paste into our submission box, with a format indicated by the example below. </h4>
             <span class="example-input">
                 {
                     <br>&#9;     "favicon_url": "https://www.cmu.edu/favicon.ico",

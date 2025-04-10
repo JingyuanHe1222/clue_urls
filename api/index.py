@@ -533,6 +533,10 @@ def validate_and_submit_edge():
         elif valid_time == 2: 
             return jsonify({"error": "Make sure the browsing history you submit has the same date as the input date on top."}), 400
             
+        # if duplicate record in the submission 
+        if (url, day_time, unix_time) in valid_urls: 
+            continue 
+
         # # check if url accessible 
         # if not is_url_accessible(url): 
         #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
@@ -628,6 +632,10 @@ def validate_and_submit_chrome():
         if not valid_time: 
             continue 
 
+        # if duplicate record in the submission 
+        if (url, day_time, unix_time) in valid_urls[date]: 
+            continue 
+
         # # check if url accessible 
         # if not is_url_accessible(url): 
         #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
@@ -678,13 +686,14 @@ def validate_and_submit_chrome():
         # submit urls of this date 
         for url_pair in valid_urls[date]: 
             url, day_time, unix_time = url_pair
+
             new_record = URLs(user_id=user_id, worker_id=worker_id, url=url, timestamp=unix_time, date=date_str, day_time=day_time)
             with lock: 
                 db.session.add(new_record)
                 db.session.commit()
+            print(f"Successfully submitted {len(valid_urls[date])} urls on date {date}...")
 
         success_submissions += 1
-        print(f"Successfully submitted {len(valid_urls)} urls on date {date}...")
 
     if success_submissions < 1: 
         # structure error msg 
@@ -697,7 +706,7 @@ def validate_and_submit_chrome():
             error_msg += f"Dates already submitted: {already_submitted}; "
         if len(less_than) > 0: 
             less_than = ",".join(less_than)
-            error_msg += f"Dates whose URLs sequences less than 10: {less_than}; "
+            error_msg += f"Dates whose valid URLs sequences less than 10: {less_than}; "
 
         return jsonify({"error": f"No successful submissions are made. {error_msg} "}), 400
     
