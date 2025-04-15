@@ -161,9 +161,45 @@
         </div>
 
         <div>
-            <h2> To export Chrome browsing history, you can follow the instruction <a target="_blank" href="https://support.google.com/accounts/answer/3024190?sjid=13449417171003339767-NA"> here </a></h2> 
-            <h4> The exported history should contains a History.json file</h4> 
-            <h4> Within this file, you can find browsing history contains within the curly bracket under the "Browser History" list.</h4>
+            <h2> To export Chrome browsing history, you can follow the instruction <a target="_blank" href="https://support.google.com/accounts/answer/3024190?sjid=13449417171003339767-NA"> here</a> or as below: </h2> 
+            
+            <div class="image-grid">
+
+                <span>
+                    1. Go to <a target="_blank" href="https://takeout.google.com/"> Google Takeout</a>. 
+                    <br> 
+                    2. For section 1 in Google Takeout, select Chrome as in the image below. 
+                </span>
+
+                <span>
+                    1. For section2 Google Takeout, download the data via zip and send to your email or Google drive. 
+                    <br> 
+                    2. Unzip the Takeout folder. Go to subfolder Chrome. 
+                    <br> 
+                    3. Open History.json with Notepad. 
+                </span>
+
+                <span>
+                    1. History.json contains a Browsing History section (opened and closed by square bracket []). 
+                    <br> 
+                    2. Copy 15-20 elements in this Section (opened and closed by curly bracket {}, separated by comma ,). 
+                </span>
+
+            </div>
+
+
+            <div class="image-grid">
+
+                <img src="{{ url_for('static', filename='images/chrome_steps/chrome_select.png') }}" alt="export button" width="370" height="220" >
+                
+                <img src="{{ url_for('static', filename='images/chrome_steps/chrome_json.png') }}" alt="export button" width="370" height="220" >
+                
+                <img src="{{ url_for('static', filename='images/chrome_steps/chrome_copy.png') }}" alt="copy history" width="380" height="220" >
+
+            </div>
+
+
+            <h4> Within this History.json, you can find browsing history contains within the curly bracket under the "Browser History" list.</h4>
             <h4> You can select many histories to copy and paste into our submission box, with a format indicated by the example below. </h4>
             <span class="example-input">
                 {
@@ -191,7 +227,7 @@
         <form>
             <label for="uploadInputs"></label>
             <div class="input-container"> 
-                <textarea id="uploadInputs" placeholder="Paste your browsing history from the exported file here..." required></textarea>
+                <textarea id="uploadInputs" placeholder="Paste 15-20 elements of your browsing history from the exported file here..." required></textarea>
             </div>
         </form>
 

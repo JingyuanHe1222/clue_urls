@@ -124,6 +124,24 @@ input[type="text"]:focus {
     box-shadow: 0 0 5px rgba(108, 99, 255, 0.5);
 }
 
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    text-align: left;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    line-height: 1.6; /* 1.4 to 2 is usually nice */
+  }
+
+.image-grid img {
+    height: 200px;
+    width: 100%;
+    object-fit: contain;
+    background-color: #f0f0f0;
+    border-radius: 8px;
+}
+
 /* Submit Button */
 button {
     background-color: #6c63ff;

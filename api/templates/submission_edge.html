@@ -189,7 +189,44 @@
         </div>
 
         <div>
-            <h3> To export Edge browsing history, you can follow the instruction <a target="_blank" href="https://www.elevenforum.com/t/export-browsing-history-to-csv-file-in-microsoft-edge.17831/"> here </a></h2> 
+            <h3> To export Edge browsing history, you can follow the instruction <a target="_blank" href="https://www.elevenforum.com/t/export-browsing-history-to-csv-file-in-microsoft-edge.17831/"> here</a> or as below: </h2> 
+        
+            <div class="image-grid">
+                <span>
+                    1. Click on the Settings and more (3 dots) button 
+                    <br> 
+                    2. Click on History.
+                    <br> 
+                    3. Click on the More options (3 dots) button. 
+                    <br> 
+                    4. Click on Export browsing data. 
+                </span>
+
+                <span>
+                    1. Click Export 
+                    <br>
+                    2. Follow Edge's authentication to download your browsing history. 
+                </span>
+
+                <span>
+                    1. Right click the exported csv file to open it in Notepad. 
+                    <br> 
+                    2. Copy and paste 15-20 lines of one day's browsing history into the submission box below. 
+                </span>
+
+            </div>
+            
+            <div class="image-grid">
+                <img src="{{ url_for('static', filename='images/edge_steps/export_tab.png') }}" alt="export tab" width="400" height="220" margin="10">
+
+                <img src="{{ url_for('static', filename='images/edge_steps/export_button.png') }}" alt="export button" width="370" height="220" >
+                
+                <img src="{{ url_for('static', filename='images/edge_steps/copy_history.png') }}" alt="copy history" width="380" height="220" >
+            
+            </div>
+                  
+            
+            
             <h4> The exported history should adhere to this format: ISO time, URL, page title. As indicated by the two example below. </h4>
             <span class="example-input">
                 2025-04-03T18:23:14.075Z,https://www.imdb.com/title/tt8999762/?ref_=hm_fanfav_t_5_pd_fp1_r,The Brutalist (2024) - IMDb
@@ -207,7 +244,7 @@
             <p id="responseDate" class="response-line" style="color: red; display: none;"></p>
             <label for="uploadInputs"></label>
             <div class="input-container"> 
-                <textarea id="uploadInputs" placeholder="Paste your browsing history from the exported file here..." required></textarea>
+                <textarea id="uploadInputs" placeholder="Paste 15-20 lines of your browsing history of the date you entered above..." required></textarea>
             </div>
         </form>
 

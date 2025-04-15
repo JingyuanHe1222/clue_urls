@@ -14,7 +14,7 @@ from threading import Lock
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, parse_qs
 
-from flask import Flask, session, request, jsonify, render_template, make_response
+from flask import Flask, session, redirect, url_for, request, jsonify, render_template, make_response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
 
