@@ -66,6 +66,7 @@ class DATEs(db.Model):
     user_id = db.Column(db.String(80), nullable=False)
     worker_id = db.Column(db.String(80), nullable=False)  # Add this line
     date = db.Column(db.String(80), nullable=False) 
+    source = db.Column(db.String(80), nullable=False) 
 
 
 class IDs(db.Model):
@@ -442,7 +443,7 @@ def submit_date():
         return jsonify({"error": "Submission date input is corrupted!"}), 403
     
     # save 
-    new_record = DATEs(user_id=user_id, worker_id=worker_id, date=date)
+    new_record = DATEs(user_id=user_id, worker_id=worker_id, date=date, source="manual")
     with lock: 
         db.session.add(new_record)
         db.session.commit()
@@ -560,7 +561,7 @@ def validate_and_submit_edge():
     user_id = request.cookies.get("user_id")
     
     # submit date
-    new_record = DATEs(user_id=user_id, worker_id=worker_id, date=date_str)
+    new_record = DATEs(user_id=user_id, worker_id=worker_id, date=date_str, source="edge")
     with lock: 
         db.session.add(new_record)
         db.session.commit()
@@ -678,7 +679,7 @@ def validate_and_submit_chrome():
             continue 
 
         # submit date
-        new_record = DATEs(user_id=user_id, worker_id=worker_id, date=date_str)
+        new_record = DATEs(user_id=user_id, worker_id=worker_id, date=date_str, source="chrome")
         with lock: 
             db.session.add(new_record)
             db.session.commit()
