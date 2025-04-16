@@ -75,6 +75,14 @@ class IDs(db.Model):
     user_id = db.Column(db.String(80), nullable=False)
     worker_id = db.Column(db.String(80), nullable=False)  # Add this line
 
+
+class BADs(db.Model):
+    __tablename__ = "bad_request"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.String(80), nullable=False)
+    error = db.Column(db.String(2083), nullable=False)  # Add this line
+    inputs = db.Column(db.String(2083), nullable=False)  # Add this line
+
        
 # create model 
 with app.app_context():
@@ -240,7 +248,7 @@ def validate_iso_timestamp(timestamp_str, date):
         dt = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
         # not the same date as above 
         if dt.date() != datetime.strptime(date, "%m/%d/%Y").date(): 
-            return None, None, 2
+            return None, dt.strftime("%H:%M"), 2
         unix_time = str(int(dt.timestamp()))
         time_str = dt.strftime("%H:%M")
         return unix_time, time_str, 1
@@ -510,7 +518,18 @@ def validate_and_submit_edge():
     valid_urls = []
     url_lines = url.split("\n")
 
+    # uid - persistent 
+    worker_id = request.cookies.get("worker_id")
+    user_id = request.cookies.get("user_id")
+    
+
     if len(url_lines) == 0: 
+        # bad record debugging 
+        raw_input = data.get("urlInput", "")[:2080]
+        bad_record = BADs(user_id=user_id, error=f"Edge: No Input.", inputs=raw_input)
+        with lock: 
+            db.session.add(bad_record)
+            db.session.commit()     
         return jsonify({"error": "No input. "}), 400
 
     for url_line in url_lines: 
@@ -520,6 +539,12 @@ def validate_and_submit_edge():
             timestamp_str = parts[0].strip()
             url = parts[1].strip()
         except IndexError: 
+            # bad record debugging 
+            raw_input = data.get("urlInput", "")[:2080]
+            bad_record = BADs(user_id=user_id, error=f"Edge: Your input does not follow the format requirement.", inputs=raw_input)
+            with lock: 
+                db.session.add(bad_record)
+                db.session.commit()     
             return jsonify({"error": "Your input does not follow the format requirement."}), 400
 
         # check validity of the URL
@@ -532,6 +557,12 @@ def validate_and_submit_edge():
         if not valid_time: 
             continue 
         elif valid_time == 2: 
+            # bad record debugging 
+            raw_input = data.get("urlInput", "")[:2080]
+            bad_record = BADs(user_id=user_id, error=f"Edge: Entered date: {date_str} vs URL date: {day_time}", inputs=raw_input)
+            with lock: 
+                db.session.add(bad_record)
+                db.session.commit()            
             return jsonify({"error": "Make sure the browsing history you submit has the same date as the input date on top."}), 400
             
         # if duplicate record in the submission 
@@ -554,14 +585,18 @@ def validate_and_submit_edge():
 
     # if long enough to submit
     if len(valid_urls) < 10: 
+        # bad record debugging 
+        raw_input = data.get("urlInput", "")[:2080]
+        bad_record = BADs(user_id=user_id, error=f"Edge: Only {len(valid_urls)} URLs are valid", inputs=raw_input)
+        with lock: 
+            db.session.add(bad_record)
+            db.session.commit()
         return jsonify({"error": f"Only {len(valid_urls)} URLs are valid. Please add more browsing records of the same day."}), 400
 
-    # uid - persistent 
-    worker_id = request.cookies.get("worker_id")
-    user_id = request.cookies.get("user_id")
     
     # submit date
     new_record = DATEs(user_id=user_id, worker_id=worker_id, date=date_str, source="edge")
+        
     with lock: 
         db.session.add(new_record)
         db.session.commit()
@@ -605,13 +640,30 @@ def validate_and_submit_chrome():
     
     valid_urls = defaultdict(list)
 
+    # uid - persistent 
+    worker_id = request.cookies.get("worker_id")
+    user_id = request.cookies.get("user_id")
+
+
     try: 
         url = "[" + url.strip().rstrip(",") + "]"
         url_lines = json.loads(url)
     except: 
+        # bad record debugging 
+        raw_input = data.get("urlInput", "")[:2080]
+        bad_record = BADs(user_id=user_id, error=f"Chrome: Initial Parsing: Your input does not follow the format requirement.", inputs=raw_input)
+        with lock: 
+            db.session.add(bad_record)
+            db.session.commit()
         return jsonify({"error": "Your input does not follow the format requirement."}), 400
 
     if len(url_lines) == 0: 
+        # bad record debugging 
+        raw_input = data.get("urlInput", "")[:2080]
+        bad_record = BADs(user_id=user_id, error=f"Chrome: No input. ", inputs=raw_input)
+        with lock: 
+            db.session.add(bad_record)
+            db.session.commit()
         return jsonify({"error": "No input. "}), 400
 
     for url_dict in url_lines: 
@@ -621,6 +673,12 @@ def validate_and_submit_chrome():
             timestamp_str = url_dict["time_usec"]
             timestamp = int(timestamp_str) // 1_000_000
         except IndexError: 
+            # bad record debugging 
+            raw_input = data.get("urlInput", "")[:2080]
+            bad_record = BADs(user_id=user_id, error=f"Chrome: Your input does not follow the format requirement", inputs=raw_input)
+            with lock: 
+                db.session.add(bad_record)
+                db.session.commit()
             return jsonify({"error": "Your input does not follow the format requirement."}), 400
 
         # check validity of the URL
@@ -650,10 +708,6 @@ def validate_and_submit_chrome():
 
         # add to valid url list
         valid_urls[date].append((url, day_time, unix_time))
-
-    # uid - persistent 
-    worker_id = request.cookies.get("worker_id")
-    user_id = request.cookies.get("user_id")
 
     # for each date submitted 
     success_submissions = 0
@@ -692,7 +746,7 @@ def validate_and_submit_chrome():
             with lock: 
                 db.session.add(new_record)
                 db.session.commit()
-            print(f"Successfully submitted {len(valid_urls[date])} urls on date {date}...")
+        print(f"Successfully submitted {len(valid_urls[date])} urls on date {date}...")
 
         success_submissions += 1
 
@@ -709,8 +763,15 @@ def validate_and_submit_chrome():
             less_than = ",".join(less_than)
             error_msg += f"Dates whose valid URLs sequences less than 10: {less_than}; "
 
+        # bad record debugging 
+        raw_input = data.get("urlInput", "")[:2080]
+        bad_record = BADs(user_id=user_id, error=f"Chrome: No successful submissions are made. {error_msg} ", inputs=raw_input)
+        with lock: 
+            db.session.add(bad_record)
+            db.session.commit()
+        # bad request 
         return jsonify({"error": f"No successful submissions are made. {error_msg} "}), 400
-    
+
     # update number of valid submission (no matter in domain or not)
     submission_count = int(request.cookies.get("submission_count", 0)) + 1
 
