@@ -55,6 +55,15 @@
         /* One Submission */ 
         async function submitText() {
 
+            // disable the button
+            const button = document.getElementById('submitButton');
+            button.disabled = true;
+
+            setTimeout(() => {
+                button.disabled = false;
+            }, 10000); // vercel has 10s timeout
+
+
             // update status
             document.getElementById("response").textContent = "Checking submission validity..."
             document.getElementById("response").style.display = "block";
@@ -91,6 +100,7 @@
                 responseDate.style.display = "block";
                 document.getElementById("response").textContent = "Please correct the invalid entries before submitting.";
                 document.getElementById("response").style.display = "block"; 
+                button.disabled = false;
                 return; 
             }
 
@@ -167,6 +177,7 @@
             if (allValid < entry_threshold) {
                 document.getElementById("response").style.display = "block";
                 document.getElementById("response").textContent = "Please correct the invalid entries before submitting.";
+                button.disabled = false;
                 return;
             }
 
@@ -193,6 +204,7 @@
             } catch (error) {
                 document.getElementById("response").style.display = "block"
                 document.getElementById("response").textContent = "An error occurred during submission.";
+                button.disabled = false;
                 return; 
             }
 
@@ -228,8 +240,10 @@
             } catch (error) {
                 document.getElementById("response").style.display = "block"
                 document.getElementById("response").textContent = "An error occurred during submission.";
+                button.disabled = false;
                 return; 
             }
+            button.disabled = false;
 
         }
 
@@ -315,7 +329,7 @@
             <div id="inputFieldsContainer"></div>
         </form>
 
-        <button onclick="submitText()">Submit</button>
+        <button id="submitButton" onclick="submitText()">Submit</button>
 
         <!-- submission info specifics -->
         <p id="response"></p>

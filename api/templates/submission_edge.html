@@ -33,6 +33,14 @@
         /* One Submission */ 
         async function submitText() {
 
+            // disable the button
+            const button = document.getElementById('submitButton');
+            button.disabled = true;
+
+            setTimeout(() => {
+                button.disabled = false;
+            }, 10000); // vercel has 10s timeout
+
             // update status
             response = document.getElementById("response")
             response.textContent = "Checking submission validity..."
@@ -63,7 +71,8 @@
                 responseDate.textContent = validateDateResult.error;
                 responseDate.style.display = "block";
                 document.getElementById("response").textContent = "Please correct the invalid entries before submitting.";
-                document.getElementById("response").style.display = "block"; 
+                document.getElementById("response").style.display = "block";
+                button.disabled = false;
                 return; 
             }
 
@@ -76,6 +85,7 @@
                 response.style.display = "block";
                 response.innerText = `Empty submission.`;
                 allValid -= 1; 
+                button.disabled = false;
                 return;
             }
 
@@ -110,6 +120,9 @@
                 response.style.display = "block";
                 response.textContent = `${error.message}`;
             }
+
+            button.disabled = false;
+
 
         }
 
@@ -248,7 +261,7 @@
             </div>
         </form>
 
-        <button onclick="submitText()">Submit</button>
+        <button id="submitButton" onclick="submitText()">Submit</button>
 
         <!-- submission info specifics -->
         <p id="response"></p>

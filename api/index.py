@@ -83,6 +83,7 @@ class BADs(db.Model):
     error = db.Column(db.String(2083), nullable=False)  # Add this line
     inputs = db.Column(db.String(2083), nullable=False)  # Add this line
 
+
        
 # create model 
 with app.app_context():
@@ -219,7 +220,6 @@ def is_generated_page(url):
         return True 
     return False
 
-
 def validate_date(date_str): 
     try:
         # Parse the date using the specified format
@@ -233,7 +233,6 @@ def validate_date(date_str):
             return "Invalid date. Date submitted is either too old (older than 1 year) or is invalid (future time)", False
     except ValueError:
         return "Invalid date. Please format date input as MM/DD/YYYY", False
-
 
 def validate_timestamp(timestamp_str): 
     try:
@@ -255,7 +254,6 @@ def validate_iso_timestamp(timestamp_str, date):
     except: 
         return None, None, 0
     
-
 def validate_unix_timestamp(timestamp): 
     try: 
         ts = datetime.fromtimestamp(timestamp)
@@ -264,8 +262,6 @@ def validate_unix_timestamp(timestamp):
     except: 
         return None, None, None, 0
     
-
-
 
 
 #############################################
@@ -420,9 +416,16 @@ def validate_entry():
 
     # if duplicate -> count as invalid
     with lock: 
-        existing_urls = URLs.query.filter_by(user_id=user_id, worker_id=worker_id, url=url, day_time=time_str).first()
+        existing_urls = URLs.query.filter_by(user_id=user_id, url=url, day_time=time_str).first()
     if existing_urls:
-        return jsonify({"error": "Invalid submission: you have already submitted this URL at the exact same time of another day."}), 400
+        return jsonify({"error": "Invalid submission: already submitted this URL at the exact same time of another day."}), 400
+    
+    # duplicate among useres 
+    with lock: 
+        existing_content = URLs.query.filter_by(date=date_str, url=url, day_time=time_str).first()
+    if existing_content: 
+        return jsonify({"error": "The same content has been submitted. Do no submit someone else's browsing history."}), 400
+    
 
     response = make_response(jsonify({
         "url": url,
@@ -532,6 +535,7 @@ def validate_and_submit_edge():
             db.session.commit()     
         return jsonify({"error": "No input. "}), 400
 
+    duplicate_submission = 0
     for url_line in url_lines: 
 
         try: 
@@ -568,6 +572,16 @@ def validate_and_submit_edge():
         # if duplicate record in the submission 
         if (url, day_time, unix_time) in valid_urls: 
             continue 
+
+        # if duplicate record across users
+        with lock: 
+            existing_urls = URLs.query.filter_by(url=url, date=date_str, day_time=day_time).first()
+        if existing_urls:
+            duplicate_submission += 1
+        
+        if duplicate_submission >= 3: 
+            return jsonify({"error": "The same content has been submitted. Do no submit someone else's browsing history. "}), 400
+            
 
         # # check if url accessible 
         # if not is_url_accessible(url): 
