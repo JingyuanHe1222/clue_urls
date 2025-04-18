@@ -579,7 +579,7 @@ def validate_and_submit_edge():
         if existing_urls:
             duplicate_submission += 1
         
-        if duplicate_submission >= 3: 
+        if duplicate_submission >= 1: 
             return jsonify({"error": "The same content has been submitted. Do no submit someone else's browsing history. "}), 400
             
 
