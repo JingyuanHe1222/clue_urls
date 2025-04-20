@@ -166,7 +166,7 @@ pattern = re.compile("|".join(url_keywords), re.IGNORECASE)
 
 def is_url_accessible(url):
     try:
-        response = requests.get(url, headers=headers, timeout=4, allow_redirects=True)
+        response = requests.get(url, headers=headers, timeout=0.5, allow_redirects=False)
         # simple check for authentication upon redirection 
         if response.url != url: 
             if pattern.search(response.url):
@@ -394,9 +394,9 @@ def validate_entry():
     if not validators.url(url): 
         return jsonify({"error": "Please input a valid URL."}), 400
         
-    # # check if url accessible 
-    # if not is_url_accessible(url): 
-    #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
+    # check if url accessible 
+    if not is_url_accessible(url): 
+        return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
     
     # check if url not generated 
     if is_generated_page(url): 
@@ -459,7 +459,7 @@ def submit_date():
         db.session.add(new_record)
         db.session.commit()
     response = make_response(jsonify({
-        "message": "DATEs workload saved successfully!",
+        "message": "Successfully submitted!",
         "user_id": user_id,
         "worker_id": worker_id,
         "date": date, 
@@ -478,6 +478,8 @@ def submit_text():
     submission = data.get("submissions", {})
 
     # save each entry 
+    valid_urls = []
+    has_same_url, has_pair = [], []
     for pair in submission: 
 
         user_id, worker_id = submission[pair]["user_id"], submission[pair]["worker_id"]
@@ -486,7 +488,42 @@ def submit_text():
 
         if not user_id or not worker_id or not url or not unix_time or not day_time: 
             return jsonify({"error": "Submission corrupted!"}), 403
+        
+        # avoid user submit the same urls 
+        with lock: 
+            existing_urls = URLs.query.filter_by(url=url).first()
+            existing_pair = URLs.query.filter_by(url=url, timestamp=unix_time).first()
+        if existing_urls:
+            has_same_url.append(1)
+        else: 
+            has_same_url.append(0)
 
+        if existing_pair: 
+            has_pair.append(1)
+        else: 
+            has_pair.append(0)
+
+        valid_urls.append((user_id, worker_id, url, date, day_time, unix_time))
+
+    # avoid URL overlap 
+    if sum(has_same_url) >= 0.5 * len(valid_urls): 
+        bad_record = BADs(user_id=user_id, error=f"Bot detection: URL", inputs=f"{has_same_url}/{len(valid_urls)} has been submitted.")
+        with lock: 
+            db.session.add(bad_record)
+            db.session.commit()       
+        return jsonify({"error": "Bot-detection: do not submit someone else's browsing history. "}), 400
+    # avoid url-time pair overlap 
+    if sum(has_pair) >= 3: 
+        bad_record = BADs(user_id=user_id, error=f"Bot detection: Pair", inputs=f"{has_pair}/{len(valid_urls)} has been submitted.")
+        with lock: 
+            db.session.add(bad_record)
+            db.session.commit()       
+        return jsonify({"error": "Bot-detection: do not submit someone else's browsing history. "}), 400
+    
+
+    for pair in valid_urls: 
+
+        user_id, worker_id, url, date, day_time, unix_time = pair
         # save 
         new_record = URLs(user_id=user_id, worker_id=worker_id, url=url, timestamp=unix_time, date=date, day_time=day_time)
         with lock: 
@@ -535,7 +572,8 @@ def validate_and_submit_edge():
             db.session.commit()     
         return jsonify({"error": "No input. "}), 400
 
-    duplicate_submission = 0
+    has_same_url = []
+    has_pair = []
     for url_line in url_lines: 
 
         try: 
@@ -573,19 +611,9 @@ def validate_and_submit_edge():
         if (url, day_time, unix_time) in valid_urls: 
             continue 
 
-        # if duplicate record across users
-        with lock: 
-            existing_urls = URLs.query.filter_by(url=url, date=date_str, day_time=day_time).first()
-        if existing_urls:
-            duplicate_submission += 1
-        
-        if duplicate_submission >= 1: 
-            return jsonify({"error": "The same content has been submitted. Do no submit someone else's browsing history. "}), 400
-            
-
-        # # check if url accessible 
-        # if not is_url_accessible(url): 
-        #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
+        # check if url accessible 
+        if not is_url_accessible(url): 
+            return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
         
         # check if url not generated 
         if is_generated_page(url): 
@@ -594,10 +622,24 @@ def validate_and_submit_edge():
         if is_landing_page(url): 
             continue 
 
+        # avoid user submit the same urls 
+        with lock: 
+            existing_urls = URLs.query.filter_by(url=url).first()
+            existing_pair = URLs.query.filter_by(url=url, timestamp=unix_time).first()
+        if existing_urls:
+            has_same_url.append(1)
+        else: 
+            has_same_url.append(0)
+
+        if existing_pair: 
+            has_pair.append(1)
+        else: 
+            has_pair.append(0)
+
         # add to valid url list
         valid_urls.append((url, day_time, unix_time))
 
-    # if long enough to submit
+    # if not long enough to submit
     if len(valid_urls) < 10: 
         # bad record debugging 
         raw_input = data.get("urlInput", "")[:2080]
@@ -606,6 +648,21 @@ def validate_and_submit_edge():
             db.session.add(bad_record)
             db.session.commit()
         return jsonify({"error": f"Only {len(valid_urls)} URLs are valid. Please add more browsing records of the same day."}), 400
+
+    # avoid URL overlap 
+    if sum(has_same_url) >= 0.5 * len(valid_urls): 
+        bad_record = BADs(user_id=user_id, error=f"Bot detection: URL", inputs=f"{has_same_url}/{len(valid_urls)} has been submitted.")
+        with lock: 
+            db.session.add(bad_record)
+            db.session.commit()       
+        return jsonify({"error": "Bot-detection: do not submit someone else's browsing history. "}), 400
+    # avoid url-time pair overlap 
+    if sum(has_pair) >= 3: 
+        bad_record = BADs(user_id=user_id, error=f"Bot detection: Pair", inputs=f"{has_pair}/{len(valid_urls)} has been submitted.")
+        with lock: 
+            db.session.add(bad_record)
+            db.session.commit()       
+        return jsonify({"error": "Bot-detection: do not submit someone else's browsing history. "}), 400
 
     
     # submit date
@@ -709,9 +766,9 @@ def validate_and_submit_chrome():
         if (url, day_time, unix_time) in valid_urls[date]: 
             continue 
 
-        # # check if url accessible 
-        # if not is_url_accessible(url): 
-        #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
+        # check if url accessible 
+        if not is_url_accessible(url): 
+            return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
         
         # check if url not generated 
         if is_generated_page(url): 

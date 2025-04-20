@@ -186,6 +186,46 @@
 
             console.log("trying to submit..."); // ***
 
+            // try if all urls can be submitted
+            try {
+
+                console.log("all valid records: ", records) // ***
+
+                let submissionResponse = await fetch("/submit", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({"submissions": records})
+                });
+
+                let submissionResult = await submissionResponse.json();
+                document.getElementById("response").textContent = submissionResult.message || submissionResult.error;
+                document.getElementById("response").style.display = "block"
+                
+                if (submissionResponse.ok) {
+                    // Clear all inputs on successful submission
+                    document.getElementById(`date`).value = "";
+                    responseDate.innerText = ""
+                    responseDate.style.display = "none"
+                    for (let i = 0; i < total_entry; i++) {
+                        document.getElementById(`urlInput${i}`).value = "";
+                        document.getElementById(`timeInput${i}`).value = "";
+                        document.getElementById(`response${i}`).style.display = "none";
+                    }
+                    // Successful submission will get submission count update 
+                    document.getElementById("submissionCount").innerText = `Valid Submissions: ${submissionResult.submission_count}`;
+
+                } else {
+                    button.disabled = false;
+                    return; 
+                }
+            } catch (error) {
+                document.getElementById("response").style.display = "block"
+                document.getElementById("response").textContent = "An error occurred during submission.";
+                button.disabled = false;
+                return; 
+            }
+
+            // submit date later 
             try {
                 const firstKey = Object.keys(records)[0];
                 let submissionDateResponse = await fetch("/submit_date", {
@@ -208,41 +248,10 @@
                 return; 
             }
 
-            try {
+            
+            document.getElementById("response").style.display = "block"
+            document.getElementById("response").textContent = "Successfully submitted!";
 
-                console.log("all valid records: ", records) // ***
-
-                let submissionResponse = await fetch("/submit", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({"submissions": records})
-                });
-
-                let submissionResult = await submissionResponse.json();
-                document.getElementById("response").textContent = submissionResult.message || submissionResult.error;
-
-                if (submissionResponse.ok) {
-                    // Clear all inputs on successful submission
-                    document.getElementById(`date`).value = "";
-                    responseDate.innerText = ""
-                    responseDate.style.display = "none"
-                    for (let i = 0; i < total_entry; i++) {
-                        document.getElementById(`urlInput${i}`).value = "";
-                        document.getElementById(`timeInput${i}`).value = "";
-                        document.getElementById(`response${i}`).style.display = "none";
-                    }
-                    // Successful submission will get submission count update 
-                    document.getElementById("submissionCount").innerText = `Valid Submissions: ${submissionResult.submission_count}`;
-
-                }
-                document.getElementById("response").style.display = "block"
-                document.getElementById("response").textContent = "Successfully submitted!";
-            } catch (error) {
-                document.getElementById("response").style.display = "block"
-                document.getElementById("response").textContent = "An error occurred during submission.";
-                button.disabled = false;
-                return; 
-            }
             button.disabled = false;
 
         }
