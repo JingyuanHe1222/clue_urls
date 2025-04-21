@@ -414,17 +414,17 @@ def validate_entry():
     # if not user_id:
     #     user_id = str(uuid.uuid4())
 
-    # if duplicate -> count as invalid
-    with lock: 
-        existing_urls = URLs.query.filter_by(user_id=user_id, url=url, day_time=time_str).first()
-    if existing_urls:
-        return jsonify({"error": "Invalid submission: already submitted this URL at the exact same time of another day."}), 400
+    # # if duplicate -> count as invalid
+    # with lock: 
+    #     existing_urls = URLs.query.filter_by(user_id=user_id, url=url, day_time=time_str).first()
+    # if existing_urls:
+    #     return jsonify({"error": "Invalid submission: already submitted this URL at the exact same time of another day."}), 400
     
-    # duplicate among useres 
-    with lock: 
-        existing_content = URLs.query.filter_by(date=date_str, url=url, day_time=time_str).first()
-    if existing_content: 
-        return jsonify({"error": "The same content has been submitted. Do no submit someone else's browsing history."}), 400
+    # # duplicate among useres 
+    # with lock: 
+    #     existing_content = URLs.query.filter_by(date=date_str, url=url, day_time=time_str).first()
+    # if existing_content: 
+    #     return jsonify({"error": "The same content has been submitted. Do no submit someone else's browsing history."}), 400
     
 
     response = make_response(jsonify({
@@ -511,14 +511,14 @@ def submit_text():
         with lock: 
             db.session.add(bad_record)
             db.session.commit()       
-        return jsonify({"error": "Bot-detection: do not submit someone else's browsing history. "}), 400
+        return jsonify({"error": "Bot-detection: your input is likely generated/copied. "}), 400
     # avoid url-time pair overlap 
     if sum(has_pair) >= 3: 
         bad_record = BADs(user_id=user_id, error=f"Bot detection: Pair", inputs=f"{has_pair}/{len(valid_urls)} has been submitted.")
         with lock: 
             db.session.add(bad_record)
             db.session.commit()       
-        return jsonify({"error": "Bot-detection: do not submit someone else's browsing history. "}), 400
+        return jsonify({"error": "Bot-detection: your input is likely generated/copied. "}), 400
     
 
     for pair in valid_urls: 
