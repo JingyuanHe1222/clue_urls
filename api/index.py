@@ -556,6 +556,7 @@ def validate_and_submit_edge():
     date_str = data.get("dateInput", "").strip()
     
     valid_urls = []
+    valid_url_set = set()
     url_lines = url.split("\n")
 
     # uid - persistent 
@@ -591,6 +592,9 @@ def validate_and_submit_edge():
 
         # check validity of the URL
         if not url or not validators.url(url): 
+            continue 
+        # check if has this url already in this submission 
+        if url in valid_url_set: 
             continue 
         # heck validity of time stamp 
         if not timestamp_str:
@@ -638,6 +642,7 @@ def validate_and_submit_edge():
 
         # add to valid url list
         valid_urls.append((url, day_time, unix_time))
+        valid_url_set.add(url)
 
     # if not long enough to submit
     if len(valid_urls) < 10: 
