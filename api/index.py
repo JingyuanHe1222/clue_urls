@@ -394,9 +394,9 @@ def validate_entry():
     if not validators.url(url): 
         return jsonify({"error": "Please input a valid URL."}), 400
         
-    # check if url accessible 
-    if not is_url_accessible(url): 
-        return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
+    # # check if url accessible 
+    # if not is_url_accessible(url): 
+    #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
     
     # check if url not generated 
     if is_generated_page(url): 
@@ -601,7 +601,7 @@ def validate_and_submit_edge():
         elif valid_time == 2: 
             # bad record debugging 
             raw_input = data.get("urlInput", "")[:2080]
-            bad_record = BADs(user_id=user_id, error=f"Edge: Entered date: {date_str} vs URL date: {day_time}", inputs=raw_input)
+            bad_record = BADs(user_id=user_id, error=f"Edge: Entered date: {date_str} does not match date in your exported history", inputs=raw_input)
             with lock: 
                 db.session.add(bad_record)
                 db.session.commit()            
@@ -611,9 +611,9 @@ def validate_and_submit_edge():
         if (url, day_time, unix_time) in valid_urls: 
             continue 
 
-        # check if url accessible 
-        if not is_url_accessible(url): 
-            return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
+        # # check if url accessible 
+        # if not is_url_accessible(url): 
+        #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
         
         # check if url not generated 
         if is_generated_page(url): 
@@ -766,9 +766,9 @@ def validate_and_submit_chrome():
         if (url, day_time, unix_time) in valid_urls[date]: 
             continue 
 
-        # check if url accessible 
-        if not is_url_accessible(url): 
-            return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
+        # # check if url accessible 
+        # if not is_url_accessible(url): 
+        #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
         
         # check if url not generated 
         if is_generated_page(url): 
