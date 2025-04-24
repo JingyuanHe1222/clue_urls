@@ -12,6 +12,16 @@
         var total_entry = 15; 
         var entry_threshold = 10; 
 
+        /* Finish Study (vercel) */
+        function openFinishStudy() {
+            document.getElementById('finishStudy').style.display = 'block';
+            document.getElementById('finishOverlay').style.display = 'block';
+        }
+        function closeFinishStudy() {
+            document.getElementById('finishStudy').style.display = 'none';
+            document.getElementById('finishOverlay').style.display = 'none';
+        }
+
         /* FAQ */
         function openFAQFormat() {
             document.getElementById('formatFaq').style.display = 'block';
@@ -131,7 +141,7 @@
         async function fetchSubmissionCount() {
             let response = await fetch("/submission_count");
             let result = await response.json();
-            document.getElementById("submissionCount").innerText = `Valid Submissions: ${result.submission_count}`;
+            document.getElementById("submissionCount").innerText = `Submissions: ${result.submission_count}`;
         }
 
         window.onload = fetchSubmissionCount;
@@ -265,7 +275,21 @@
 
         <!-- submission info specifics -->
         <p id="response"></p>
-        <p id="submissionCount">Valid Submissions: 0</p>
+        <p id="submissionCount">Submissions: 0</p>
+
+        <!-- finish study -->
+        <div class="overlay" id="finishOverlay" onclick="closeFinishStudy()"></div>
+        <div class="faqBox" id="finishStudy">
+            <p>
+                You can complete the study by clicking the following link: 
+                <a href="https://app.prolific.com/submissions/complete?cc=C1CGHD0O">Finish Study</a>
+            
+            </p>
+        </div>
+
+        <div class="faq-buttons-container">
+            <button class="faqbutton" onclick="openFinishStudy()">Finish Study</button>
+        </div>
 
         <!-- footer -->
         <div class="footer">
