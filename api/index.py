@@ -397,9 +397,9 @@ def validate_entry():
     if not validators.url(url): 
         return jsonify({"error": "Please input a valid URL."}), 400
         
-    # # check if url accessible 
-    # if not is_url_accessible(url): 
-    #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
+    # check if url accessible 
+    if not is_url_accessible(url): 
+        return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
     
     # check if url not generated 
     if is_generated_page(url): 
@@ -618,9 +618,9 @@ def validate_and_submit_edge():
         if (url, day_time, unix_time) in valid_urls: 
             continue 
 
-        # # check if url accessible 
-        # if not is_url_accessible(url): 
-        #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
+        # check if url accessible 
+        if not is_url_accessible(url): 
+            return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
         
         # check if url not generated 
         if is_generated_page(url): 
@@ -774,9 +774,9 @@ def validate_and_submit_chrome():
         if (url, day_time, unix_time) in valid_urls[date]: 
             continue 
 
-        # # check if url accessible 
-        # if not is_url_accessible(url): 
-        #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
+        # check if url accessible 
+        if not is_url_accessible(url): 
+            return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
         
         # check if url not generated 
         if is_generated_page(url): 
