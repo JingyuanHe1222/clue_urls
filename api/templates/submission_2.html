@@ -11,9 +11,17 @@
         // Get number of entry per submission: default 10
         var total_entry = 15; 
         var entry_threshold = 10;  
+        var num_submissions_needed = 10; 
 
         /* Finish Study (vercel) */
-        function openFinishStudy() {
+        async function openFinishStudy() {
+            // adapt according to submissions made
+            let response = await fetch("/submission_count");
+            let result = await response.json();      
+            if (result.submission_count >= num_submissions_needed) {
+                document.getElementById("finishText").innerText = `You complete the study and can return by the following code. Note that submissions will be manually graded for reward. `;
+                document.getElementById("finishCode").innerText = "C1CGHD0O";
+            }
             document.getElementById('finishStudy').style.display = 'block';
             document.getElementById('finishOverlay').style.display = 'block';
         }
@@ -356,13 +364,12 @@
 
         
         <!-- finish study -->
-        <div class="overlay" id="finishOverlay" onclick="closeFinishStudy()">
-        </div>
+        <div class="overlay" id="finishOverlay" onclick="closeFinishStudy()"></div>
         <div class="faqBox" id="finishStudy">
-            <p>
-                You can complete the study by clicking the following link: 
-                <a href="https://app.prolific.com/submissions/complete?cc=C1CGHD0O">Finish Study</a>
-            
+            <p id="finishText">
+                You need 10 submissions to complete the study. 
+            </p>
+            <p id="finishCode">
             </p>
         </div>
 

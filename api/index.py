@@ -321,6 +321,9 @@ def authenticate():
         # set cookies 
         response.set_cookie("user_id", user_id, max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
         response.set_cookie("worker_id", worker_id, max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
+        # put 0 for submission count if not there already 
+        submission_count = int(request.cookies.get("submission_count", 0))
+        response.set_cookie("submission_count", str(submission_count), max_age=60*60*24*365, httponly=True, samesite="Lax")  # 1-year cookie
         return response, 200
     else:
         return jsonify({"error": "Invalid API key!"}), 401
