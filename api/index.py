@@ -584,7 +584,7 @@ def validate_and_submit_edge():
         try: 
             parts = url_line.strip().split(",")
             timestamp_str = parts[0].strip()
-            url = parts[1].strip()
+            url = parts[1].strip().split()[0]
         except IndexError: 
             # bad record debugging 
             raw_input = data.get("urlInput", "")[:2080]
@@ -615,10 +615,6 @@ def validate_and_submit_edge():
                 db.session.commit()            
             return jsonify({"error": "Make sure the browsing history you submit has the same date as the input date on top."}), 400
             
-        # if duplicate record in the submission 
-        if (url, day_time, unix_time) in valid_urls: 
-            continue 
-
         # # check if url accessible 
         # if not is_url_accessible(url): 
         #     return jsonify({"error": f"Invalid submission: URL submitted is not accessiable. Please make sure this is a public URL or all contents loaded correctly in the page."}), 400
