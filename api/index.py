@@ -664,7 +664,7 @@ def validate_and_submit_edge():
         with lock: 
             db.session.add(bad_record)
             db.session.commit()
-        return jsonify({"error": f"Only {len(valid_urls)} URLs are valid. Please add more browsing records of the same day."}), 400
+        return jsonify({"error": f"Only {len(valid_urls)} URLs are valid. Please add more browsing records of the same day that is entertainment-related and not search results."}), 400
 
     # # avoid URL overlap 
     # if sum(has_same_url) >= 0.5 * len(valid_urls): 
