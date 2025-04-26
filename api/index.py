@@ -198,6 +198,14 @@ def is_generated_page(url):
                 return matched
         return None
     
+    def is_bad_domain(url): 
+        url_keywords = ["prolific.com", "qualtrics.com", "clueurls.vercel.app", "docs.google.com", \
+                        "accountscenter", "https://mail.", "https://chatgpt.com", "signin", "login"]
+        pattern = re.compile("|".join(url_keywords), re.IGNORECASE)
+        if pattern.search(url):
+            return True
+        return False
+    
     # criteria 2: link structure 
     def is_mostly_links(soup):
         # links outnumber paragraphs significantly, assume it's a generated page
@@ -210,14 +218,18 @@ def is_generated_page(url):
     if contains_query_optr(url) or url_keywords(url):  
         return True 
     
-    # c2-c3: bs4 related processing 
-    try:
-        response = requests.get(url, headers=headers, timeout=4, allow_redirects=False)
-        soup = BeautifulSoup(response.text, "html.parser")
-    except requests.RequestException:
-        return True
-    if is_mostly_links(soup): 
+    # # c2-c3: bs4 related processing 
+    # try:
+    #     response = requests.get(url, headers=headers, timeout=4, allow_redirects=False)
+    #     soup = BeautifulSoup(response.text, "html.parser")
+    # except requests.RequestException:
+    #     return True
+    # if is_mostly_links(soup): 
+    #     return True 
+    
+    if is_bad_domain(url): 
         return True 
+
     return False
 
 def validate_date(date_str): 
