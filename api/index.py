@@ -200,7 +200,8 @@ def is_generated_page(url):
     
     def is_bad_domain(url): 
         url_keywords = ["prolific.com", "qualtrics.com", "clueurls.vercel.app", "docs.google.com", \
-                        "accountscenter", "https://mail.", "https://chatgpt.com", "signin", "login"]
+                        "accountscenter", "https://mail.", "https://chatgpt.com", "signin", "login" \
+                        "cloudresearch.com", "survey", "prolific", "mturk", "signup"]
         pattern = re.compile("|".join(url_keywords), re.IGNORECASE)
         if pattern.search(url):
             return True
