@@ -204,7 +204,8 @@ def is_generated_page(url):
                         "cloudresearch.com", "survey", "prolific", "mturk", "signup", "/cart", "signon", \
                         "drive.google.com", "/checkout", "calendar.app.google", "takeout.google.com" \
                         "chat.deepseek.com", "/auth", "accounts.google.com", "chat.deepseek.com", \
-                        "x.com", "xvideos.com" , "gemini.google.com"]
+                        "x.com", "xvideos.com" , "gemini.google.com", "wix.com", "twitter.com", "copilot.microsoft.com", \
+                        "discord.com"]
         pattern = re.compile("|".join(url_keywords), re.IGNORECASE)
         if pattern.search(url):
             return True
